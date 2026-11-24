@@ -1,11 +1,138 @@
 // BOOKINGS service: all database queries for this module live here.
-// Controllers call these functions; nothing else touches the bookings tables.
+// Controllers call these functions; nothing else touches the bookings table.
+import { BOOKING_KIND, BOOKING_STATUS, LISTING_STATUS, LISTING_TYPE } from "@realestate/shared";
 import { query } from "../../config/db.js";
+import { httpError } from "../../middleware/errorHandler.js";
 
-// Example:
-// export async function findById(id) {
-//   const { rows } = await query("SELECT * FROM some_table WHERE id = $1", [id]);
-//   return rows[0] ?? null;
-// }
+// Columns for a Booking (docs/API.md). DATE columns go out as "YYYY-MM-DD" text,
+// so time zones can never shift them by a day.
+const BOOKING_COLUMNS = `
+  b.id, b.listing_id, b.user_id, b.kind,
+  to_char(b.date, 'YYYY-MM-DD') AS date,
+  to_char(b.check_out, 'YYYY-MM-DD') AS check_out,
+  b.message, b.status, b.created_at`;
 
-export { query };
+function toBooking(row) {
+  return {
+    id: row.id,
+    listingId: row.listing_id,
+    userId: row.user_id,
+    kind: row.kind,
+    date: row.date,
+    checkOut: row.check_out,
+    message: row.message,
+    status: row.status,
+    createdAt: row.created_at,
+  };
+}
+
+async function getBooking(id) {
+  const { rows } = await query(`SELECT ${BOOKING_COLUMNS} FROM bookings b WHERE b.id = $1`, [id]);
+  if (rows.length === 0) throw httpError(404, "Booking not found");
+  return toBooking(rows[0]);
+}
+
+// 409 if a CONFIRMED stay on this listing overlaps the nights date..checkOut.
+// (Check-out day = someone else's check-in day is fine.)
+async function assertNoOverlappingStay(listingId, date, checkOut, ignoreBookingId = null) {
+  const { rows } = await query(
+    `SELECT 1 FROM bookings
+      WHERE listing_id = $1 AND kind = $2 AND status = $3
+        AND date < $5 AND check_out > $4
+        AND ($6::int IS NULL OR id <> $6)
+      LIMIT 1`,
+    [listingId, BOOKING_KIND.STAY, BOOKING_STATUS.CONFIRMED, date, checkOut, ignoreBookingId],
+  );
+  if (rows.length > 0) throw httpError(409, "These dates are already booked");
+}
+
+// fields: { listingId, kind, date, checkOut, message } (format already checked by the controller)
+export async function createBooking(userId, { listingId, kind, date, checkOut, message }) {
+  const { rows } = await query("SELECT seller_id, type, status FROM listings WHERE id = $1", [
+    listingId,
+  ]);
+  const listing = rows[0];
+  if (!listing || listing.status !== LISTING_STATUS.LIVE) {
+    throw httpError(404, "Listing not found");
+  }
+  if (listing.seller_id === userId) throw httpError(400, "You can't book your own listing");
+
+  if (kind === BOOKING_KIND.STAY) {
+    if (listing.type !== LISTING_TYPE.SHORT_STAY) {
+      throw httpError(400, "Stays can only be booked on short stay listings");
+    }
+    await assertNoOverlappingStay(listingId, date, checkOut);
+  }
+
+  const inserted = await query(
+    `INSERT INTO bookings (listing_id, user_id, kind, date, check_out, message, status)
+     VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`,
+    [
+      listingId,
+      userId,
+      kind,
+      date,
+      kind === BOOKING_KIND.STAY ? checkOut : null,
+      message,
+      BOOKING_STATUS.REQUESTED,
+    ],
+  );
+  return { booking: await getBooking(inserted.rows[0].id) };
+}
+
+// asSeller = false: bookings I made. asSeller = true: bookings on listings I own.
+export async function listMyBookings(userId, asSeller) {
+  const { rows } = await query(
+    asSeller
+      ? `SELECT ${BOOKING_COLUMNS} FROM bookings b JOIN listings l ON l.id = b.listing_id
+          WHERE l.seller_id = $1 ORDER BY b.created_at DESC, b.id DESC`
+      : `SELECT ${BOOKING_COLUMNS} FROM bookings b
+          WHERE b.user_id = $1 ORDER BY b.created_at DESC, b.id DESC`,
+    [userId],
+  );
+  return { items: rows.map(toBooking) };
+}
+
+// Who may change a booking, and to what:
+//   listing owner: requested -> confirmed or declined
+//   person who booked: requested or confirmed -> cancelled
+//   anyone else: 403
+export async function updateBookingStatus(bookingId, userId, status) {
+  const { rows } = await query(
+    `SELECT b.user_id, b.listing_id, b.kind, b.status,
+            to_char(b.date, 'YYYY-MM-DD') AS date, to_char(b.check_out, 'YYYY-MM-DD') AS check_out,
+            l.seller_id
+       FROM bookings b JOIN listings l ON l.id = b.listing_id
+      WHERE b.id = $1`,
+    [bookingId],
+  );
+  const booking = rows[0];
+  if (!booking) throw httpError(404, "Booking not found");
+
+  const isOwner = booking.seller_id === userId;
+  const isBooker = booking.user_id === userId;
+  if (!isOwner && !isBooker) throw httpError(403, "You can't change this booking");
+
+  if (status === BOOKING_STATUS.CONFIRMED || status === BOOKING_STATUS.DECLINED) {
+    if (!isOwner) throw httpError(403, "Only the listing owner can confirm or decline");
+    if (booking.status !== BOOKING_STATUS.REQUESTED) {
+      throw httpError(400, `This booking is already ${booking.status}`);
+    }
+    if (status === BOOKING_STATUS.CONFIRMED && booking.kind === BOOKING_KIND.STAY) {
+      await assertNoOverlappingStay(booking.listing_id, booking.date, booking.check_out, bookingId);
+    }
+  } else if (status === BOOKING_STATUS.CANCELLED) {
+    if (!isBooker) throw httpError(403, "Only the person who booked can cancel");
+    if (
+      booking.status !== BOOKING_STATUS.REQUESTED &&
+      booking.status !== BOOKING_STATUS.CONFIRMED
+    ) {
+      throw httpError(400, `This booking is already ${booking.status}`);
+    }
+  } else {
+    throw httpError(400, "status must be confirmed, declined or cancelled");
+  }
+
+  await query("UPDATE bookings SET status = $2 WHERE id = $1", [bookingId, status]);
+  return { booking: await getBooking(bookingId) };
+}
