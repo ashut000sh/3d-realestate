@@ -21,7 +21,8 @@ export const STATUS_META = {
   [SCAN_STATUS.CANCELLED]: { label: "Cancelled", tone: "neutral" },
 };
 
-const MAX_TOUR_MB = 200;
+// Same limit as the server (server/src/modules/scans/scans.upload.js, MAX_TOUR_MB)
+const MAX_TOUR_MB = 50;
 
 const formatDateTime = (value) =>
   new Date(value).toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" });
