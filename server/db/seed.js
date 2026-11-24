@@ -12,6 +12,7 @@ import {
   ROLES,
   SCAN_STATUS,
 } from "@realestate/shared";
+import { LISTING_PHOTOS } from "./seed-photos.js";
 
 const PASSWORD = "Password123!";
 
@@ -36,9 +37,32 @@ const DISTRICT_CENTRE = {
   Chitwan: [27.5291, 84.3542],
 };
 
-// A tour file for listings whose scan is "published". Put any test .glb at
-// client/public/test-tour.glb (it is git-ignored) to open these tours locally.
-const TEST_TOUR_URL = "/test-tour.glb";
+// Sample 3D tours. Every live listing gets one, matched to its kind of property.
+// The .glb files are made by `npm run tours` into client/public/tours/ (git-ignored).
+const TOUR_BY_KIND = {
+  house: "/tours/house.glb",
+  apartment: "/tours/apartment.glb",
+  room: "/tours/room.glb",
+  office: "/tours/office.glb",
+};
+// Listing title -> kind of tour
+const TOUR_KIND = {
+  "3BHK house in Budhanilkantha": "house",
+  "2BHK flat in Baluwatar": "apartment",
+  "Thamel studio for travellers": "room",
+  "Bungalow in Bhaisepati": "house",
+  "Office floor in Pulchowk": "office",
+  "Newari house in Patan": "house",
+  "Heritage homestay near Durbar Square": "room",
+  "Family flat in Suryabinayak": "apartment",
+  "Land with small house in Thimi": "house",
+  "Apartment in Sanepa Heights": "apartment",
+  "Lakeside room with Phewa view": "room",
+  "Hotel building in Pokhara": "room",
+  "Cottage near Sarangkot": "house",
+  "Jungle lodge in Sauraha": "room",
+  "Farm house in Bharatpur": "house",
+};
 
 // scan: the status of this listing's scan request (null = no request yet).
 // The listing's own status follows from it (see listingStatusFor below).
@@ -329,9 +353,12 @@ function nearby([lat, lng], i) {
   return [lat + ((i % 5) - 2) * 0.008, lng + ((i % 3) - 1) * 0.01];
 }
 
-// Sample photos (placeholder images from picsum.photos, the same picture every time)
-const photosFor = (i) =>
-  [0, 1, 2].map((n) => `https://picsum.photos/seed/realestate-${i}-${n}/800/600`);
+// Real photos that match each listing (Wikimedia Commons, credits in seed-photos.js)
+const photosFor = (listing) => {
+  const photos = LISTING_PHOTOS[listing.title];
+  if (!photos) throw new Error(`No photos for "${listing.title}" in seed-photos.js`);
+  return photos;
+};
 
 // ---------- seeding ----------
 
@@ -387,14 +414,16 @@ async function seed(client) {
         listing.bedrooms,
         listing.bathrooms,
         listing.areaSqft,
-        listing.scan === PUBLISHED ? TEST_TOUR_URL : null,
+        listingStatusFor(listing.scan) === LISTING_STATUS.LIVE
+          ? TOUR_BY_KIND[TOUR_KIND[listing.title]]
+          : null,
         LISTINGS.length - i, // older listings first, so the newest is listing 15
       ],
     );
     const listingId = rows[0].id;
     listingIds.push(listingId);
 
-    for (const [position, url] of photosFor(i).entries()) {
+    for (const [position, url] of photosFor(listing).entries()) {
       await client.query(
         "INSERT INTO listing_images (listing_id, url, position) VALUES ($1, $2, $3)",
         [listingId, url, position],

@@ -16,7 +16,8 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "db:seed": "npm run db:seed -w server"
+    "db:seed": "npm run db:seed -w server",
+    "tours": "node scripts/make-sample-tours.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
