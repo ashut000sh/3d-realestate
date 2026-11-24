@@ -1,3 +1,4 @@
+import path from "node:path";
 import express from "express";
 import cors from "cors";
 import { env } from "./config/env.js";
@@ -13,6 +14,9 @@ export const app = express();
 
 app.use(cors({ origin: env.CLIENT_URL }));
 app.use(express.json());
+
+// Uploaded files: listing photos (/uploads/listings/...) and 3D tours (/uploads/tours/...)
+app.use("/uploads", express.static(path.resolve(import.meta.dirname, "../uploads")));
 
 app.get("/api/health", (_req, res) => res.json({ ok: true }));
 
