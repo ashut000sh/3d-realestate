@@ -45,28 +45,27 @@ const ROWS = [
 
 export default function Compare() {
   const [ids, setIds] = useState(getCompareIds);
-  const [listings, setListings] = useState([]);
-  const [loading, setLoading] = useState(ids.length > 0);
-  const [error, setError] = useState("");
+  // loadedKey = which ids the data/error belong to (worked out below, not set inside the effect)
+  const [loaded, setLoaded] = useState({ loadedKey: null, listings: [], error: "" });
   const [notice, setNotice] = useState("");
 
   // Follow changes made on other pages or tabs
   useEffect(() => onCompareChange(() => setIds(getCompareIds())), []);
 
   const idsKey = ids.join(",");
+  const isFresh = loaded.loadedKey === idsKey;
+  // Only show chosen properties. After "Remove" the rest are already here, so no loader.
+  const listings = loaded.listings.filter((listing) => ids.includes(listing.id));
+  const error = isFresh ? loaded.error : "";
+  const loading = !isFresh && ids.some((id) => !listings.some((listing) => listing.id === id));
+
   useEffect(() => {
-    if (ids.length === 0) {
-      setListings([]);
-      setLoading(false);
-      return undefined;
-    }
+    if (ids.length === 0) return undefined;
     let cancelled = false;
-    setLoading(true);
-    setError("");
     compareListings(ids)
       .then((items) => {
         if (cancelled) return;
-        setListings(items);
+        setLoaded({ loadedKey: idsKey, listings: items, error: "" });
         // Properties that are no longer live come back missing: drop them from the list
         const missing = ids.filter((id) => !items.some((item) => item.id === id));
         if (missing.length > 0) {
@@ -74,8 +73,10 @@ export default function Compare() {
           setNotice("Some properties are no longer available and were removed.");
         }
       })
-      .catch((err) => !cancelled && setError(err.message))
-      .finally(() => !cancelled && setLoading(false));
+      .catch(
+        (err) =>
+          !cancelled && setLoaded((prev) => ({ ...prev, loadedKey: idsKey, error: err.message })),
+      );
     return () => {
       cancelled = true;
     };

@@ -22,21 +22,28 @@ const LINK_BUTTON = "block rounded-lg px-4 py-2 text-center font-medium transiti
 export default function Listing() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [listing, setListing] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null); // { status, message }
+  // loadedId = which listing the data/error belong to. While it differs from the URL's id
+  // we are loading (worked out here, not set inside the effect).
+  const [loaded, setLoaded] = useState({ loadedId: null, listing: null, error: null });
+  const { listing, error } = loaded; // error: { status, message }
+  const loading = loaded.loadedId !== id;
   const [chatBusy, setChatBusy] = useState(false);
   const [notice, setNotice] = useState(""); // messages from the chat / compare buttons
   const [inCompare, setInCompare] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
-    setLoading(true);
-    setError(null);
     getListing(id)
-      .then((data) => !cancelled && setListing(data))
-      .catch((err) => !cancelled && setError({ status: err.status, message: err.message }))
-      .finally(() => !cancelled && setLoading(false));
+      .then((data) => !cancelled && setLoaded({ loadedId: id, listing: data, error: null }))
+      .catch(
+        (err) =>
+          !cancelled &&
+          setLoaded({
+            loadedId: id,
+            listing: null,
+            error: { status: err.status, message: err.message },
+          }),
+      );
     return () => {
       cancelled = true;
     };
