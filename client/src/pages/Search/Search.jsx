@@ -20,24 +20,31 @@ const FILTER_KEYS = ["q", "type", "district", "minPrice", "maxPrice"];
 
 export default function Search() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const [result, setResult] = useState({ items: [], page: 1, total: 0 });
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  // loadedKey = which URL the result/error belong to. While it differs from the
+  // current URL we are loading (worked out here, not set inside the effect).
+  const [loaded, setLoaded] = useState({
+    loadedKey: null,
+    result: { items: [], page: 1, total: 0 },
+    error: "",
+  });
 
   // Read the filters from the URL ("" = not set)
   const filters = Object.fromEntries(FILTER_KEYS.map((key) => [key, searchParams.get(key) ?? ""]));
   const page = Math.max(1, Number(searchParams.get("page")) || 1);
   const queryKey = searchParams.toString();
+  const { result, error } = loaded;
+  const loading = loaded.loadedKey !== queryKey;
 
   // Load results whenever the URL changes
   useEffect(() => {
     let cancelled = false;
-    setLoading(true);
-    setError("");
     searchListings({ ...filters, page })
-      .then((data) => !cancelled && setResult(data))
-      .catch((err) => !cancelled && setError(err.message))
-      .finally(() => !cancelled && setLoading(false));
+      .then((data) => !cancelled && setLoaded({ loadedKey: queryKey, result: data, error: "" }))
+      .catch(
+        (err) =>
+          !cancelled &&
+          setLoaded((prev) => ({ loadedKey: queryKey, result: prev.result, error: err.message })),
+      );
     return () => {
       cancelled = true;
     };
@@ -73,6 +80,8 @@ export default function Search() {
       <div className="grid gap-6 lg:grid-cols-[260px_1fr_minmax(300px,38%)]">
         <aside>
           <FilterPanel
+            // Back/forward or "Clear" changes the URL: a new key resets the text boxes to match
+            key={`${filters.q}|${filters.minPrice}|${filters.maxPrice}`}
             filters={filters}
             onChange={updateFilters}
             onClear={() => setSearchParams(new URLSearchParams())}
