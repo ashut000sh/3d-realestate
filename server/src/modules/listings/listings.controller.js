@@ -2,8 +2,8 @@
 // No SQL in here. Database work belongs in listings.service.js.
 import { DISTRICTS, LIMITS, LISTING_TYPE } from "@realestate/shared";
 import { httpError } from "../../middleware/errorHandler.js";
-import { notImplemented } from "../../utils/notImplemented.js";
 import * as listingsService from "./listings.service.js";
+import { listingFileUrl, receiveImages, removeFiles } from "./listings.upload.js";
 
 const LISTING_TYPES = Object.values(LISTING_TYPE);
 
@@ -81,8 +81,32 @@ export async function update(req, res) {
 // POST /api/listings/:id/images   (owner seller)
 // in:  multipart/form-data: images (1 to 10 .jpg/.png files, max 5 MB each)
 // out: 200 { images: string[] }   (all image URLs for the listing, first one is the cover)
-// Task 6 (feature/listing-images-api)
-export const uploadImages = notImplemented("POST /api/listings/:id/images");
+// Three steps, in this order:
+//   1. check the listing exists and belongs to this seller (before any file is saved)
+//   2. multer saves the files to server/uploads/listings/<id>/
+//   3. store their URLs in listing_images
+export const uploadImages = [
+  async function checkOwner(req, _res, next) {
+    await listingsService.assertOwner(readId(req.params.id, "id"), req.user.id);
+    next();
+  },
+  receiveImages,
+  async function saveImages(req, res) {
+    const listingId = readId(req.params.id, "id");
+    const files = req.files ?? [];
+    if (files.length === 0) throw httpError(400, 'Choose at least 1 photo (field name "images")');
+    try {
+      const result = await listingsService.addImages(
+        listingId,
+        files.map((file) => ({ url: listingFileUrl(listingId, file.filename) })),
+      );
+      res.json(result);
+    } catch (err) {
+      removeFiles(files); // don't leave files on disk that the database doesn't know about
+      throw err;
+    }
+  },
+];
 
 // ---------- input checks ----------
 

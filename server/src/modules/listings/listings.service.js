@@ -181,3 +181,32 @@ export async function assertOwner(listingId, sellerId) {
   if (rows.length === 0) throw httpError(404, "Listing not found");
   if (rows[0].seller_id !== sellerId) throw httpError(403, "You can only edit your own listings");
 }
+
+// Saves uploaded photos to listing_images after the ones already there.
+// The first photo ever uploaded gets position 0, so it becomes the cover.
+// files: [{ url }] in upload order. Returns { images: string[] } (all URLs, cover first).
+export async function addImages(listingId, files) {
+  const { rows } = await query(
+    "SELECT COALESCE(MAX(position), -1) + 1 AS next FROM listing_images WHERE listing_id = $1",
+    [listingId],
+  );
+  const start = rows[0].next;
+
+  const values = [];
+  const params = [];
+  files.forEach((file, i) => {
+    params.push(listingId, file.url, start + i);
+    const n = params.length;
+    values.push(`($${n - 2}, $${n - 1}, $${n})`);
+  });
+  await query(
+    `INSERT INTO listing_images (listing_id, url, position) VALUES ${values.join(", ")}`,
+    params,
+  );
+
+  const all = await query(
+    "SELECT url FROM listing_images WHERE listing_id = $1 ORDER BY position, id",
+    [listingId],
+  );
+  return { images: all.rows.map((row) => row.url) };
+}
