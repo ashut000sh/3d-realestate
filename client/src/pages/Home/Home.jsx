@@ -29,10 +29,9 @@ export default function Home() {
 
   // Load listings for the chosen tab. "cancelled" stops an old tab's answer
   // from replacing a newer one if the user switches tabs quickly.
+  // loading/error are reset in selectTab, not here (react-hooks/set-state-in-effect).
   useEffect(() => {
     let cancelled = false;
-    setLoading(true);
-    setError("");
     searchListings({ type, page: 1 })
       .then((data) => !cancelled && setListings(data.items))
       .catch((err) => !cancelled && setError(err.message))
@@ -41,6 +40,14 @@ export default function Home() {
       cancelled = true;
     };
   }, [type]);
+
+  function selectTab(nextType) {
+    // Same tab again: the effect won't re-run, so don't show a loader that never ends
+    if (nextType === type) return;
+    setLoading(true);
+    setError("");
+    setType(nextType);
+  }
 
   function handleSearch(event) {
     event.preventDefault();
@@ -90,7 +97,7 @@ export default function Home() {
               key={tab.type}
               role="tab"
               aria-selected={type === tab.type}
-              onClick={() => setType(tab.type)}
+              onClick={() => selectTab(tab.type)}
               className={`rounded-full px-4 py-2 text-sm font-medium transition ${
                 type === tab.type
                   ? "bg-primary text-white"
