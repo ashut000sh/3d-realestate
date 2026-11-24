@@ -18,6 +18,18 @@ export function formatPrice(price, type) {
   return `Rs. ${NUMBER_FORMAT.format(Number(price))}${SUFFIX[type] ?? ""}`;
 }
 
+// Short form for map tags: 32500000 -> "Rs 3.25 Cr", 750000 -> "Rs 7.5 L", 25000 -> "Rs 25K"
+// (Cr = crore = 1,00,00,000 and L = lakh = 1,00,000, how prices are said in Nepal)
+export function formatCompactPrice(price) {
+  const value = Number(price);
+  if (!Number.isFinite(value)) return "–";
+  const trim = (n) => String(Number(n.toFixed(2)));
+  if (value >= 1e7) return `Rs ${trim(value / 1e7)} Cr`;
+  if (value >= 1e5) return `Rs ${trim(value / 1e5)} L`;
+  if (value >= 1e3) return `Rs ${trim(value / 1e3)}K`;
+  return `Rs ${value}`;
+}
+
 // Short labels for listing types, used on badges and tabs
 export const LISTING_TYPE_LABEL = {
   [LISTING_TYPE.SALE]: "For sale",

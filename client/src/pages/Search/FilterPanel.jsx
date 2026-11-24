@@ -4,11 +4,9 @@
 import { useState } from "react";
 import { DISTRICTS, LISTING_TYPE } from "@realestate/shared";
 import Button from "../../components/Button.jsx";
-import Input from "../../components/Input.jsx";
+import Icon from "../../components/Icon.jsx";
+import Input, { Select } from "../../components/Input.jsx";
 import { LISTING_TYPE_LABEL } from "../../utils/formatPrice.js";
-
-const SELECT_CLASS =
-  "w-full rounded-lg border border-border bg-surface px-3 py-2 outline-none focus:border-primary";
 
 // filters: { q, type, district, minPrice, maxPrice } as strings ("" = not set)
 // onChange(changes): merge these changes into the filters (and go back to page 1)
@@ -36,79 +34,122 @@ export default function FilterPanel({ filters, onChange, onClear }) {
     onChange({ q: draft.q.trim(), minPrice: draft.minPrice, maxPrice: draft.maxPrice });
   }
 
+  const activeCount = [
+    filters.q,
+    filters.type,
+    filters.district,
+    filters.minPrice,
+    filters.maxPrice,
+  ].filter(Boolean).length;
+  const typeOptions = [
+    ["", "Any"],
+    ...Object.values(LISTING_TYPE).map((t) => [t, LISTING_TYPE_LABEL[t]]),
+  ];
+
   return (
-    <form onSubmit={handleApply} className="card space-y-4">
+    <form onSubmit={handleApply} className="card space-y-5">
+      <div className="flex items-center justify-between">
+        <p className="flex items-center gap-2 font-semibold text-ink">
+          <Icon name="filter" className="h-4 w-4 text-accent-dark" /> Filters
+          {activeCount > 0 && (
+            <span className="rounded-full bg-primary px-2 text-xs font-bold text-white">
+              {activeCount}
+            </span>
+          )}
+        </p>
+        {activeCount > 0 && (
+          <button
+            type="button"
+            onClick={onClear}
+            className="text-sm font-medium text-muted hover:text-danger"
+          >
+            Clear all
+          </button>
+        )}
+      </div>
+
       <Input
-        label="Search"
+        label="Keywords"
         name="q"
+        icon="search"
         placeholder="Area or title"
         value={draft.q}
         onChange={(e) => setDraft({ ...draft, q: e.target.value })}
       />
 
-      <label className="block">
-        <span className="mb-1 block text-sm font-medium">Type</span>
-        <select
-          className={SELECT_CLASS}
-          value={filters.type}
-          onChange={(e) => onChange({ type: e.target.value })}
-        >
-          <option value="">Any type</option>
-          {Object.values(LISTING_TYPE).map((type) => (
-            <option key={type} value={type}>
-              {LISTING_TYPE_LABEL[type]}
-            </option>
+      <div>
+        <span className="label">Type</span>
+        <div className="grid grid-cols-2 gap-1.5">
+          {typeOptions.map(([value, label]) => (
+            <button
+              key={value || "any"}
+              type="button"
+              onClick={() => onChange({ type: value })}
+              aria-pressed={filters.type === value}
+              className={`rounded-xl border px-3 py-2 text-sm font-medium transition ${
+                filters.type === value
+                  ? "border-primary bg-primary-soft text-primary"
+                  : "border-border text-muted hover:border-muted/40 hover:text-ink"
+              }`}
+            >
+              {label}
+            </button>
           ))}
-        </select>
-      </label>
-
-      <label className="block">
-        <span className="mb-1 block text-sm font-medium">District</span>
-        <select
-          className={SELECT_CLASS}
-          value={filters.district}
-          onChange={(e) => onChange({ district: e.target.value })}
-        >
-          <option value="">All districts</option>
-          {DISTRICTS.map((district) => (
-            <option key={district} value={district}>
-              {district}
-            </option>
-          ))}
-        </select>
-      </label>
-
-      <div className="grid grid-cols-2 gap-3">
-        <Input
-          label="Min price (Rs.)"
-          name="minPrice"
-          type="number"
-          min="0"
-          inputMode="numeric"
-          value={draft.minPrice}
-          onChange={(e) => setDraft({ ...draft, minPrice: e.target.value })}
-        />
-        <Input
-          label="Max price (Rs.)"
-          name="maxPrice"
-          type="number"
-          min="0"
-          inputMode="numeric"
-          value={draft.maxPrice}
-          onChange={(e) => setDraft({ ...draft, maxPrice: e.target.value })}
-        />
+        </div>
       </div>
 
-      {error && <p className="text-sm text-danger">{error}</p>}
+      <Select
+        label="District"
+        name="district"
+        value={filters.district}
+        onChange={(e) => onChange({ district: e.target.value })}
+      >
+        <option value="">All districts</option>
+        {DISTRICTS.map((district) => (
+          <option key={district} value={district}>
+            {district}
+          </option>
+        ))}
+      </Select>
 
-      <div className="flex gap-2">
-        <Button type="submit" className="flex-1">
-          Apply
-        </Button>
-        <Button type="button" variant="secondary" onClick={onClear}>
-          Clear
-        </Button>
+      <div>
+        <span className="label">Price (Rs.)</span>
+        <div className="grid grid-cols-2 gap-2">
+          <Input
+            name="minPrice"
+            aria-label="Min price"
+            type="number"
+            min="0"
+            inputMode="numeric"
+            placeholder="Min"
+            value={draft.minPrice}
+            onChange={(e) => setDraft({ ...draft, minPrice: e.target.value })}
+          />
+          <Input
+            name="maxPrice"
+            aria-label="Max price"
+            type="number"
+            min="0"
+            inputMode="numeric"
+            placeholder="Max"
+            value={draft.maxPrice}
+            onChange={(e) => setDraft({ ...draft, maxPrice: e.target.value })}
+          />
+        </div>
       </div>
+
+      {error && (
+        <p
+          className="flex items-center gap-2 rounded-xl bg-danger-soft px-3 py-2 text-sm text-danger"
+          role="alert"
+        >
+          <Icon name="alert" className="h-4 w-4" /> {error}
+        </p>
+      )}
+
+      <Button type="submit" className="w-full">
+        Apply filters
+      </Button>
     </form>
   );
 }

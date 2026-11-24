@@ -6,7 +6,10 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { LIMITS } from "@realestate/shared";
-import Loader from "../../components/Loader.jsx";
+import Button from "../../components/Button.jsx";
+import EmptyState from "../../components/EmptyState.jsx";
+import Icon from "../../components/Icon.jsx";
+import { Skeleton } from "../../components/Loader.jsx";
 import { ROUTES, buildRoute } from "../../constants/routes.js";
 import { compareListings } from "../../services/listings.service.js";
 import { LISTING_TYPE_LABEL, formatPrice } from "../../utils/formatPrice.js";
@@ -33,7 +36,7 @@ const ROWS = [
       l.tourUrl ? (
         <Link
           to={buildRoute(ROUTES.TOUR, { id: l.id })}
-          className="font-medium text-primary hover:underline"
+          className="inline-flex items-center gap-1.5 rounded-full bg-accent-soft px-3 py-1 text-sm font-semibold text-accent-dark hover:bg-accent hover:text-ink"
         >
           Yes, open tour
         </Link>
@@ -86,94 +89,142 @@ export default function Compare() {
 
   if (loading) {
     return (
-      <main className="page">
-        <Loader label="Loading comparison..." />
+      <main className="page space-y-6">
+        <Skeleton className="h-10 w-72" />
+        <div className="grid grid-cols-3 gap-4">
+          {[0, 1, 2].map((i) => (
+            <Skeleton key={i} className="h-72" />
+          ))}
+        </div>
       </main>
     );
   }
 
+  const emptySlots = Math.max(0, LIMITS.MAX_COMPARE - listings.length);
+
   return (
-    <main className="page space-y-6">
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h1 className="page-title">Compare properties</h1>
-        <p className="text-sm text-muted">
-          {listings.length} of {LIMITS.MAX_COMPARE} chosen
-        </p>
+    <main className="page space-y-8">
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <p className="eyebrow">Side by side</p>
+          <h1 className="page-title mt-2">Compare homes</h1>
+        </div>
+        <div className="flex items-center gap-2 rounded-full bg-surface px-4 py-2 text-sm ring-1 ring-border">
+          <span className="flex gap-1">
+            {Array.from({ length: LIMITS.MAX_COMPARE }, (_, i) => (
+              <span
+                key={i}
+                className={`h-2 w-5 rounded-full ${i < listings.length ? "bg-primary" : "bg-border"}`}
+              />
+            ))}
+          </span>
+          <span className="font-medium text-muted">
+            <span className="text-ink">{listings.length}</span> of {LIMITS.MAX_COMPARE} chosen
+          </span>
+        </div>
       </div>
 
-      {notice && <p className="card text-sm text-muted">{notice}</p>}
-      {error && <p className="card text-danger">Couldn't load the comparison: {error}</p>}
+      {notice && (
+        <p className="flex items-center gap-2 rounded-xl bg-warning-soft px-4 py-3 text-sm text-warning">
+          <Icon name="info" className="h-4 w-4" /> {notice}
+        </p>
+      )}
+      {error && (
+        <EmptyState icon="alert" tone="danger" title="Couldn't load the comparison" text={error} />
+      )}
 
       {!error && listings.length === 0 ? (
-        <div className="card space-y-3 text-center">
-          <p className="font-medium">Nothing to compare yet</p>
-          <p className="text-muted">
-            Open a property and press "Add to compare". You can compare up to {LIMITS.MAX_COMPARE}.
-          </p>
-          <Link
-            to={ROUTES.SEARCH}
-            className="inline-block font-medium text-primary hover:underline"
-          >
-            Find properties
-          </Link>
-        </div>
+        <EmptyState
+          icon="compare"
+          title="Nothing to compare yet"
+          text={`Open any home and press “Add to compare”. You can compare up to ${LIMITS.MAX_COMPARE} side by side.`}
+          action={<Button to={ROUTES.SEARCH}>Find homes to compare</Button>}
+        />
       ) : (
         !error && (
-          // Wide table scrolls sideways on phones
+          // Wide table scrolls sideways on phones instead of squashing
           <div className="card overflow-x-auto p-0">
-            <table className="w-full min-w-[560px] table-fixed border-collapse text-left">
+            <table className="w-full min-w-[720px] table-fixed border-collapse text-left">
               <colgroup>
-                <col className="w-32" />
+                <col className="w-40" />
                 {listings.map((l) => (
                   <col key={l.id} />
+                ))}
+                {Array.from({ length: emptySlots }, (_, i) => (
+                  <col key={`empty-${i}`} />
                 ))}
               </colgroup>
               <thead>
                 <tr className="align-top">
-                  <td className="p-4" />
+                  <td className="p-5 align-bottom">
+                    <p className="text-sm text-muted">Pick the one that fits you best.</p>
+                  </td>
                   {listings.map((l) => (
-                    <th key={l.id} scope="col" className="space-y-2 p-4 font-normal">
+                    <th key={l.id} scope="col" className="p-4 font-normal">
+                      <div className="group relative">
+                        <Link to={buildRoute(ROUTES.LISTING, { id: l.id })} className="block">
+                          <div className="aspect-[4/3] overflow-hidden rounded-2xl bg-sand">
+                            {l.images?.[0] ? (
+                              <img
+                                src={mediaUrl(l.images[0])}
+                                alt={l.title}
+                                className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                              />
+                            ) : (
+                              <div className="flex h-full items-center justify-center text-sm text-muted">
+                                No photo
+                              </div>
+                            )}
+                          </div>
+                          <span className="mt-3 line-clamp-2 font-semibold text-ink group-hover:text-primary">
+                            {l.title}
+                          </span>
+                        </Link>
+                        <button
+                          type="button"
+                          onClick={() => removeFromCompare(l.id)}
+                          aria-label={`Remove ${l.title}`}
+                          className="absolute top-2 right-2 flex h-8 w-8 items-center justify-center rounded-full bg-white/95 text-muted shadow hover:text-danger"
+                        >
+                          <Icon name="x" className="h-4 w-4" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => removeFromCompare(l.id)}
+                          className="mt-1 text-sm font-medium text-muted hover:text-danger"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    </th>
+                  ))}
+                  {Array.from({ length: emptySlots }, (_, i) => (
+                    <th key={`empty-${i}`} scope="col" className="p-4 font-normal">
                       <Link
-                        to={buildRoute(ROUTES.LISTING, { id: l.id })}
-                        className="block space-y-2"
+                        to={ROUTES.SEARCH}
+                        className="flex aspect-[4/3] flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-border text-sm font-semibold text-muted transition hover:border-primary hover:text-primary"
                       >
-                        <div className="aspect-[4/3] overflow-hidden rounded-lg bg-background">
-                          {l.images?.[0] ? (
-                            <img
-                              src={mediaUrl(l.images[0])}
-                              alt={l.title}
-                              className="h-full w-full object-cover"
-                            />
-                          ) : (
-                            <div className="flex h-full items-center justify-center text-sm text-muted">
-                              No photo
-                            </div>
-                          )}
-                        </div>
-                        <span className="line-clamp-2 font-semibold hover:text-primary">
-                          {l.title}
-                        </span>
+                        <Icon name="plus" className="h-6 w-6" />
+                        Add a home
                       </Link>
-                      <button
-                        type="button"
-                        onClick={() => removeFromCompare(l.id)}
-                        className="text-sm text-danger hover:underline"
-                      >
-                        Remove
-                      </button>
                     </th>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {ROWS.map((row) => (
-                  <tr key={row.label} className="border-t border-border">
-                    <th scope="row" className="p-4 text-sm font-medium text-muted">
+                {ROWS.map((row, i) => (
+                  <tr key={row.label} className={i % 2 === 0 ? "bg-sand/45" : ""}>
+                    <th scope="row" className="px-5 py-4 text-sm font-medium text-muted">
                       {row.label}
                     </th>
                     {listings.map((l) => (
-                      <td key={l.id} className="p-4">
+                      <td key={l.id} className="px-4 py-4 font-medium text-ink">
                         {row.cell(l)}
+                      </td>
+                    ))}
+                    {Array.from({ length: emptySlots }, (_, j) => (
+                      <td key={`empty-${j}`} className="px-4 py-4 text-border">
+                        –
                       </td>
                     ))}
                   </tr>

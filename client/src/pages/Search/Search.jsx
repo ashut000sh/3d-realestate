@@ -10,8 +10,9 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { LIMITS } from "@realestate/shared";
 import Button from "../../components/Button.jsx";
-import ListingCard from "../../components/ListingCard.jsx";
-import Loader from "../../components/Loader.jsx";
+import ListingCard, { ListingCardSkeleton } from "../../components/ListingCard.jsx";
+import EmptyState from "../../components/EmptyState.jsx";
+import Icon from "../../components/Icon.jsx";
 import { searchListings } from "../../services/listings.service.js";
 import FilterPanel from "./FilterPanel.jsx";
 import ResultsMap from "./ResultsMap.jsx";
@@ -75,10 +76,23 @@ export default function Search() {
 
   return (
     <main className="page">
-      <h1 className="page-title mb-6">Search properties</h1>
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <p className="eyebrow">Explore</p>
+          <h1 className="page-title mt-2">
+            {filters.district ? `Homes in ${filters.district}` : "Find your place in Nepal"}
+          </h1>
+        </div>
+        {!loading && !error && (
+          <p className="rounded-full bg-surface px-4 py-2 text-sm font-medium text-muted ring-1 ring-border">
+            <span className="font-semibold text-ink">{result.total}</span>{" "}
+            {result.total === 1 ? "home" : "homes"} found
+          </p>
+        )}
+      </div>
 
-      <div className="grid gap-6 lg:grid-cols-[260px_1fr_minmax(300px,38%)]">
-        <aside>
+      <div className="mt-8 grid gap-6 lg:grid-cols-[280px_1fr] xl:grid-cols-[280px_1fr_minmax(320px,34%)]">
+        <aside className="lg:sticky lg:top-24 lg:self-start">
           <FilterPanel
             // Back/forward or "Clear" changes the URL: a new key resets the text boxes to match
             key={`${filters.q}|${filters.minPrice}|${filters.maxPrice}`}
@@ -88,56 +102,58 @@ export default function Search() {
           />
         </aside>
 
-        <section className="space-y-4">
+        <section className="min-w-0 space-y-6">
           {loading ? (
-            <Loader label="Searching..." />
+            <div className="grid gap-5 sm:grid-cols-2">
+              {[0, 1, 2, 3].map((i) => (
+                <ListingCardSkeleton key={i} />
+              ))}
+            </div>
           ) : error ? (
-            <p className="card text-danger">Couldn't load results: {error}</p>
+            <EmptyState icon="alert" tone="danger" title="Couldn't load results" text={error} />
+          ) : result.items.length === 0 ? (
+            <EmptyState
+              icon="search"
+              title="No homes match these filters"
+              text="Try a wider price range, another district or fewer words in the search box."
+              action={
+                <Button variant="secondary" onClick={() => setSearchParams(new URLSearchParams())}>
+                  Clear all filters
+                </Button>
+              }
+            />
           ) : (
-            <>
-              <p className="text-sm text-muted">
-                {result.total === 1 ? "1 property found" : `${result.total} properties found`}
-              </p>
+            <div className="grid gap-5 sm:grid-cols-2">
+              {result.items.map((listing) => (
+                <ListingCard key={listing.id} listing={listing} />
+              ))}
+            </div>
+          )}
 
-              {result.items.length === 0 ? (
-                <p className="card text-muted">
-                  Nothing matches these filters. Try a wider price range or another district.
-                </p>
-              ) : (
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
-                  {result.items.map((listing) => (
-                    <ListingCard key={listing.id} listing={listing} />
-                  ))}
-                </div>
-              )}
-
-              {totalPages > 1 && (
-                <nav className="flex items-center justify-between" aria-label="Pages">
-                  <Button
-                    variant="secondary"
-                    disabled={page <= 1}
-                    onClick={() => goToPage(page - 1)}
-                  >
-                    Previous
-                  </Button>
-                  <span className="text-sm text-muted">
-                    Page {page} of {totalPages}
-                  </span>
-                  <Button
-                    variant="secondary"
-                    disabled={page >= totalPages}
-                    onClick={() => goToPage(page + 1)}
-                  >
-                    Next
-                  </Button>
-                </nav>
-              )}
-            </>
+          {!loading && !error && totalPages > 1 && (
+            <nav
+              className="flex items-center justify-between rounded-2xl bg-surface p-2 ring-1 ring-border"
+              aria-label="Pages"
+            >
+              <Button variant="ghost" disabled={page <= 1} onClick={() => goToPage(page - 1)}>
+                <Icon name="chevronLeft" className="h-4 w-4" /> Previous
+              </Button>
+              <span className="text-sm text-muted">
+                Page <span className="font-semibold text-ink">{page}</span> of {totalPages}
+              </span>
+              <Button
+                variant="ghost"
+                disabled={page >= totalPages}
+                onClick={() => goToPage(page + 1)}
+              >
+                Next <Icon name="chevronRight" className="h-4 w-4" />
+              </Button>
+            </nav>
           )}
         </section>
 
-        {/* Map: right on big screens, below the results on phones */}
-        <section className="lg:sticky lg:top-4 lg:self-start">
+        {/* Map: right on big screens, below the results on smaller ones */}
+        <section className="lg:col-span-2 xl:sticky xl:top-24 xl:col-span-1 xl:self-start">
           <ResultsMap listings={loading || error ? [] : result.items} />
         </section>
       </div>

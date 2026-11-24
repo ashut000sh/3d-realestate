@@ -6,8 +6,12 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { LISTING_TYPE } from "@realestate/shared";
+import Avatar from "../../components/Avatar.jsx";
+import Badge from "../../components/Badge.jsx";
 import Button from "../../components/Button.jsx";
-import Loader from "../../components/Loader.jsx";
+import EmptyState from "../../components/EmptyState.jsx";
+import Icon from "../../components/Icon.jsx";
+import { Skeleton } from "../../components/Loader.jsx";
 import { ROUTES, buildRoute } from "../../constants/routes.js";
 import { tokenStore } from "../../services/api.js";
 import { startConversation } from "../../services/chat.service.js";
@@ -16,8 +20,6 @@ import { LISTING_TYPE_LABEL, formatPrice } from "../../utils/formatPrice.js";
 import { addToCompare, getCompareIds, onCompareChange } from "../Compare/compareStore.js";
 import Gallery from "./Gallery.jsx";
 import ListingMap from "./ListingMap.jsx";
-
-const LINK_BUTTON = "block rounded-lg px-4 py-2 text-center font-medium transition";
 
 export default function Listing() {
   const { id } = useParams();
@@ -81,24 +83,32 @@ export default function Listing() {
 
   if (loading) {
     return (
-      <main className="page">
-        <Loader label="Loading property..." />
+      <main className="page space-y-6">
+        <Skeleton className="h-5 w-32" />
+        <Skeleton className="h-[460px] rounded-[28px]" />
+        <div className="grid gap-10 lg:grid-cols-[1fr_380px]">
+          <div className="space-y-4">
+            <Skeleton className="h-10 w-2/3" />
+            <Skeleton className="h-5 w-1/3" />
+            <Skeleton className="h-24" />
+          </div>
+          <Skeleton className="h-80" />
+        </div>
       </main>
     );
   }
 
   if (error) {
+    const notFound = error.status === 404;
     return (
-      <main className="page space-y-4">
-        <h1 className="page-title">
-          {error.status === 404 ? "Property not found" : "Couldn't load this property"}
-        </h1>
-        <p className="text-muted">
-          {error.status === 404 ? "It may have been removed or the link is wrong." : error.message}
-        </p>
-        <Link to={ROUTES.SEARCH} className="font-medium text-primary hover:underline">
-          Back to search
-        </Link>
+      <main className="page">
+        <EmptyState
+          icon={notFound ? "home" : "alert"}
+          tone={notFound ? "neutral" : "danger"}
+          title={notFound ? "Property not found" : "Couldn't load this property"}
+          text={notFound ? "It may have been removed, or the link is wrong." : error.message}
+          action={<Button to={ROUTES.SEARCH}>Explore other homes</Button>}
+        />
       </main>
     );
   }
@@ -106,111 +116,205 @@ export default function Listing() {
   const isStay = listing.type === LISTING_TYPE.SHORT_STAY;
   const hasLocation = typeof listing.lat === "number" && typeof listing.lng === "number";
   const facts = [
-    listing.bedrooms !== null && { label: "Bedrooms", value: listing.bedrooms },
-    listing.bathrooms !== null && { label: "Bathrooms", value: listing.bathrooms },
+    listing.bedrooms !== null && { icon: "bed", label: "Bedrooms", value: listing.bedrooms },
+    listing.bathrooms !== null && { icon: "bath", label: "Bathrooms", value: listing.bathrooms },
     listing.areaSqft !== null && {
+      icon: "area",
       label: "Area",
       value: `${new Intl.NumberFormat("en-IN").format(listing.areaSqft)} sq ft`,
     },
-    { label: "Type", value: LISTING_TYPE_LABEL[listing.type] ?? listing.type },
+    { icon: "home", label: "Type", value: LISTING_TYPE_LABEL[listing.type] ?? listing.type },
   ].filter(Boolean);
 
+  const tourBadge = listing.tourUrl && (
+    <Link
+      to={buildRoute(ROUTES.TOUR, { id: listing.id })}
+      className="absolute top-4 left-4 z-10 flex items-center gap-2 rounded-full bg-ink/90 py-2 pr-4 pl-2 text-sm font-semibold text-white shadow-[var(--shadow-lift)] backdrop-blur transition hover:bg-ink"
+    >
+      <span className="flex h-7 w-7 items-center justify-center rounded-full bg-accent text-ink">
+        <Icon name="cube" className="h-4 w-4" />
+      </span>
+      Open 3D tour
+    </Link>
+  );
+
   return (
-    <main className="page">
-      <Link to={ROUTES.SEARCH} className="text-sm text-muted hover:text-primary">
-        ‹ Back to search
-      </Link>
+    <main className="page pt-6">
+      <nav className="flex items-center gap-2 text-sm text-muted" aria-label="Breadcrumb">
+        <Link to={ROUTES.SEARCH} className="flex items-center gap-1 hover:text-primary">
+          <Icon name="arrowLeft" className="h-4 w-4" /> Explore
+        </Link>
+        <span>/</span>
+        <Link to={`${ROUTES.SEARCH}?district=${listing.district}`} className="hover:text-primary">
+          {listing.district}
+        </Link>
+      </nav>
 
-      <div className="mt-4 grid gap-8 lg:grid-cols-[1fr_340px]">
-        {/* Left: photos and details */}
-        <div className="space-y-6">
-          <Gallery images={listing.images} title={listing.title} />
+      <div className="mt-4">
+        <Gallery images={listing.images} title={listing.title} badge={tourBadge} />
+      </div>
 
-          <div>
-            <h1 className="page-title">{listing.title}</h1>
-            <p className="mt-1 text-muted">
+      <div className="mt-10 grid gap-10 lg:grid-cols-[1fr_380px]">
+        {/* Left: details */}
+        <div className="min-w-0 space-y-10">
+          <header>
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge tone="primary">{LISTING_TYPE_LABEL[listing.type] ?? listing.type}</Badge>
+              {listing.tourUrl ? (
+                <Badge tone="gold">
+                  <Icon name="cube" className="h-3.5 w-3.5" /> 3D tour available
+                </Badge>
+              ) : (
+                <Badge>3D tour coming soon</Badge>
+              )}
+            </div>
+            <h1 className="display mt-4 text-3xl leading-tight text-ink sm:text-[2.6rem]">
+              {listing.title}
+            </h1>
+            <p className="mt-2 flex items-center gap-1.5 text-muted">
+              <Icon name="pin" className="h-4 w-4" />
               {[listing.address, listing.district].filter(Boolean).join(", ")}
             </p>
-          </div>
+          </header>
 
           <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             {facts.map((fact) => (
-              <div key={fact.label} className="card p-3">
-                <dt className="text-xs text-muted">{fact.label}</dt>
-                <dd className="font-semibold">{fact.value}</dd>
+              <div key={fact.label} className="rounded-2xl bg-surface p-4 ring-1 ring-border">
+                <Icon name={fact.icon} className="h-5 w-5 text-accent-dark" />
+                <dd className="mt-3 text-lg font-semibold text-ink">{fact.value}</dd>
+                <dt className="text-sm text-muted">{fact.label}</dt>
               </div>
             ))}
           </dl>
 
           {listing.description && (
             <section>
-              <h2 className="mb-2 text-lg font-semibold">About this property</h2>
-              <p className="whitespace-pre-line text-text/90">{listing.description}</p>
+              <h2 className="display text-2xl text-ink">About this home</h2>
+              <p className="mt-3 text-[17px] leading-relaxed whitespace-pre-line text-text/85">
+                {listing.description}
+              </p>
             </section>
+          )}
+
+          {listing.tourUrl && (
+            <Link
+              to={buildRoute(ROUTES.TOUR, { id: listing.id })}
+              className="grain group relative flex items-center gap-6 overflow-hidden rounded-[24px] bg-ink p-6 text-white sm:p-8"
+            >
+              <div className="absolute -right-16 -bottom-20 h-64 w-64 rounded-full bg-primary/60 blur-3xl" />
+              <span className="relative flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-accent text-ink transition group-hover:scale-105">
+                <Icon name="cube" className="h-8 w-8" />
+              </span>
+              <span className="relative">
+                <span className="display block text-2xl">Walk through it in 3D</span>
+                <span className="mt-1 block text-white/70">
+                  Look around every room and measure walls, right in your browser.
+                </span>
+              </span>
+              <Icon
+                name="arrowRight"
+                className="relative ml-auto hidden h-6 w-6 text-accent transition group-hover:translate-x-1 sm:block"
+              />
+            </Link>
           )}
 
           {hasLocation && (
             <section>
-              <h2 className="mb-2 text-lg font-semibold">Location</h2>
+              <h2 className="display text-2xl text-ink">Where it is</h2>
+              <p className="mt-1 mb-4 text-muted">{listing.district}, Nepal</p>
               <ListingMap lat={listing.lat} lng={listing.lng} />
             </section>
           )}
         </div>
 
         {/* Right: price and actions (sticks while scrolling on laptop) */}
-        <aside className="lg:sticky lg:top-4 lg:self-start">
-          <div className="card space-y-4">
-            <p className="text-2xl font-semibold text-primary">
-              {formatPrice(listing.price, listing.type)}
-            </p>
+        <aside className="lg:sticky lg:top-24 lg:self-start">
+          <div className="card space-y-5 p-6">
+            <div>
+              <p className="text-sm text-muted">
+                {isStay
+                  ? "Per night"
+                  : listing.type === LISTING_TYPE.RENT
+                    ? "Per month"
+                    : "Asking price"}
+              </p>
+              <p className="display mt-1 text-3xl text-ink">{formatPrice(listing.price)}</p>
+            </div>
 
-            {listing.tourUrl ? (
-              <Link
-                to={buildRoute(ROUTES.TOUR, { id: listing.id })}
-                className={`${LINK_BUTTON} bg-primary text-white hover:bg-primary-dark`}
+            <div className="space-y-2.5">
+              {listing.tourUrl ? (
+                <Button
+                  to={buildRoute(ROUTES.TOUR, { id: listing.id })}
+                  size="lg"
+                  className="w-full"
+                >
+                  <Icon name="cube" className="h-5 w-5" /> Open 3D tour
+                </Button>
+              ) : (
+                <Button disabled size="lg" variant="secondary" className="w-full">
+                  <Icon name="clock" className="h-5 w-5" /> Tour coming soon
+                </Button>
+              )}
+              <Button
+                to={buildRoute(ROUTES.BOOKING, { id: listing.id })}
+                variant="gold"
+                size="lg"
+                className="w-full"
               >
-                Open 3D tour
-              </Link>
-            ) : (
-              <Button disabled className="w-full">
-                Tour coming soon
+                <Icon name="calendar" className="h-5 w-5" />{" "}
+                {isStay ? "Book a stay" : "Book a viewing"}
               </Button>
-            )}
-
-            <Link
-              to={buildRoute(ROUTES.BOOKING, { id: listing.id })}
-              className={`${LINK_BUTTON} border border-border bg-surface hover:bg-background`}
-            >
-              {isStay ? "Book a stay" : "Book a viewing"}
-            </Link>
-
-            <Button variant="secondary" className="w-full" onClick={handleChat} disabled={chatBusy}>
-              {chatBusy ? "Opening chat..." : "Chat with seller"}
-            </Button>
+              <Button
+                variant="secondary"
+                size="lg"
+                className="w-full"
+                onClick={handleChat}
+                loading={chatBusy}
+              >
+                <Icon name="chat" className="h-5 w-5" />{" "}
+                {chatBusy ? "Opening chat..." : "Chat with seller"}
+              </Button>
+            </div>
 
             {inCompare ? (
               <Link
                 to={ROUTES.COMPARE}
-                className="block text-center text-sm font-medium text-primary hover:underline"
+                className="flex items-center justify-center gap-2 rounded-xl bg-success-soft px-4 py-2.5 text-sm font-semibold text-success"
               >
-                Added to compare. View comparison
+                <Icon name="check" className="h-4 w-4" /> Added to compare. View comparison
               </Link>
             ) : (
               <button
                 type="button"
                 onClick={handleCompare}
-                className="block w-full text-center text-sm font-medium text-primary hover:underline"
+                className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-border px-4 py-2.5 text-sm font-semibold text-primary transition hover:border-primary hover:bg-primary-soft/50"
               >
-                + Add to compare
+                <Icon name="plus" className="h-4 w-4" /> Add to compare
               </button>
             )}
 
-            {notice && <p className="text-sm text-danger">{notice}</p>}
+            {notice && (
+              <p
+                className="flex items-start gap-2 rounded-xl bg-warning-soft px-3 py-2.5 text-sm text-warning"
+                role="alert"
+              >
+                <Icon name="info" className="mt-0.5 h-4 w-4" /> {notice}
+              </p>
+            )}
 
             {listing.seller && (
-              <p className="border-t border-border pt-4 text-sm text-muted">
-                Listed by <span className="font-medium text-text">{listing.seller.fullName}</span>
-              </p>
+              <div className="flex items-center gap-3 border-t border-border pt-5">
+                <Avatar name={listing.seller.fullName} />
+                <div>
+                  <p className="text-xs text-muted">Listed by</p>
+                  <p className="font-semibold text-ink">{listing.seller.fullName}</p>
+                </div>
+                <Icon
+                  name="shield"
+                  className="ml-auto h-5 w-5 text-success"
+                  aria-label="Verified seller"
+                />
+              </div>
             )}
           </div>
         </aside>

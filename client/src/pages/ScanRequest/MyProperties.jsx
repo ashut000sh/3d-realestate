@@ -5,33 +5,33 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { BOOKING_KIND, BOOKING_STATUS, SCAN_STATUS } from "@realestate/shared";
 import Button from "../../components/Button.jsx";
-import Loader from "../../components/Loader.jsx";
+import Badge from "../../components/Badge.jsx";
+import Icon from "../../components/Icon.jsx";
+import { Skeleton } from "../../components/Loader.jsx";
 import { ROUTES, buildRoute } from "../../constants/routes.js";
 import { getMyBookings, updateBookingStatus } from "../../services/bookings.service.js";
 import { getMyScanRequests } from "../../services/scans.service.js";
 
 const SCAN_BADGE = {
-  [SCAN_STATUS.PENDING]: { label: "Waiting for our team", className: "bg-accent/20 text-text" },
-  [SCAN_STATUS.SCHEDULED]: { label: "Visit scheduled", className: "bg-primary/15 text-primary" },
-  [SCAN_STATUS.SCANNED]: { label: "Scanned, tour coming", className: "bg-primary/15 text-primary" },
-  [SCAN_STATUS.PUBLISHED]: { label: "3D tour live", className: "bg-success text-white" },
-  [SCAN_STATUS.CANCELLED]: { label: "Cancelled", className: "bg-border text-muted" },
+  [SCAN_STATUS.PENDING]: { label: "Waiting for our team", tone: "warning" },
+  [SCAN_STATUS.SCHEDULED]: { label: "Visit scheduled", tone: "info" },
+  [SCAN_STATUS.SCANNED]: { label: "Scanned, tour coming", tone: "primary" },
+  [SCAN_STATUS.PUBLISHED]: { label: "3D tour live", tone: "success" },
+  [SCAN_STATUS.CANCELLED]: { label: "Cancelled", tone: "neutral" },
 };
 
 const BOOKING_BADGE = {
-  [BOOKING_STATUS.REQUESTED]: { label: "New request", className: "bg-accent/20 text-text" },
-  [BOOKING_STATUS.CONFIRMED]: { label: "Confirmed", className: "bg-success text-white" },
-  [BOOKING_STATUS.DECLINED]: { label: "Declined", className: "bg-border text-muted" },
-  [BOOKING_STATUS.CANCELLED]: { label: "Cancelled by buyer", className: "bg-border text-muted" },
+  [BOOKING_STATUS.REQUESTED]: { label: "New request", tone: "gold" },
+  [BOOKING_STATUS.CONFIRMED]: { label: "Confirmed", tone: "success" },
+  [BOOKING_STATUS.DECLINED]: { label: "Declined", tone: "neutral" },
+  [BOOKING_STATUS.CANCELLED]: { label: "Cancelled by buyer", tone: "neutral" },
 };
 
-function Badge({ badge, fallback }) {
+function StatusBadge({ badge, fallback }) {
   return (
-    <span
-      className={`inline-block rounded-full px-2.5 py-1 text-xs font-medium ${badge?.className ?? "bg-border"}`}
-    >
+    <Badge tone={badge?.tone ?? "neutral"} dot>
       {badge?.label ?? fallback}
-    </span>
+    </Badge>
   );
 }
 
@@ -81,91 +81,121 @@ export default function MyProperties({ refreshKey }) {
   const titleOf = (listingId) =>
     scans.find((s) => s.listingId === listingId)?.listingTitle ?? `Property #${listingId}`;
 
-  if (loading) return <Loader label="Loading your properties..." />;
+  if (loading) {
+    return (
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Skeleton className="h-64" />
+        <Skeleton className="h-64" />
+      </div>
+    );
+  }
+
+  const newRequests = bookings.filter((b) => b.status === BOOKING_STATUS.REQUESTED).length;
 
   return (
-    <div className="space-y-8">
-      {error && <p className="card text-danger">{error}</p>}
+    <div className="space-y-6">
+      {error && (
+        <p className="flex items-center gap-2 rounded-xl bg-danger-soft px-4 py-3 text-sm text-danger">
+          <Icon name="alert" className="h-4 w-4" /> {error}
+        </p>
+      )}
 
-      <section className="space-y-3">
-        <h2 className="text-lg font-semibold">My scan requests</h2>
-        {scans.length === 0 ? (
-          <p className="card text-muted">No scan requests yet. Add a property above.</p>
-        ) : (
-          <ul className="space-y-2">
-            {scans.map((scan) => (
-              <li
-                key={scan.id}
-                className="card flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
-              >
-                <div>
-                  <Link
-                    to={buildRoute(ROUTES.LISTING, { id: scan.listingId })}
-                    className="font-medium hover:text-primary"
-                  >
-                    {scan.listingTitle}
-                  </Link>
-                  <p className="text-sm text-muted">
-                    {scan.scheduledFor
-                      ? `Visit: ${formatDateTime(scan.scheduledFor)}`
-                      : `Preferred date: ${scan.preferredDate ?? "any"}`}
-                  </p>
-                </div>
-                <Badge badge={SCAN_BADGE[scan.status]} fallback={scan.status} />
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-
-      <section className="space-y-3">
-        <h2 className="text-lg font-semibold">Booking requests on my properties</h2>
-        {bookings.length === 0 ? (
-          <p className="card text-muted">No booking requests yet.</p>
-        ) : (
-          <ul className="space-y-2">
-            {bookings.map((booking) => (
-              <li key={booking.id} className="card space-y-3">
-                <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                  <div>
+      <div className="grid gap-6 lg:grid-cols-2">
+        <section className="card p-0">
+          <header className="flex items-center justify-between border-b border-border px-5 py-4">
+            <h3 className="flex items-center gap-2 font-semibold text-ink">
+              <Icon name="scan" className="h-5 w-5 text-accent-dark" /> My scan requests
+            </h3>
+            <span className="text-sm text-muted">{scans.length}</span>
+          </header>
+          {scans.length === 0 ? (
+            <p className="px-5 py-10 text-center text-sm text-muted">
+              No scan requests yet. Add a property above.
+            </p>
+          ) : (
+            <ul className="divide-y divide-border">
+              {scans.map((scan) => (
+                <li key={scan.id} className="flex items-center justify-between gap-3 px-5 py-4">
+                  <div className="min-w-0">
                     <Link
-                      to={buildRoute(ROUTES.LISTING, { id: booking.listingId })}
-                      className="font-medium hover:text-primary"
+                      to={buildRoute(ROUTES.LISTING, { id: scan.listingId })}
+                      className="block truncate font-medium text-ink hover:text-primary"
                     >
-                      {titleOf(booking.listingId)}
+                      {scan.listingTitle}
                     </Link>
-                    <p className="text-sm text-muted">
-                      {booking.kind === BOOKING_KIND.STAY
-                        ? `Stay ${booking.date} to ${booking.checkOut}`
-                        : `Viewing on ${booking.date}`}
+                    <p className="mt-0.5 flex items-center gap-1.5 text-sm text-muted">
+                      <Icon name="calendar" className="h-3.5 w-3.5" />
+                      {scan.scheduledFor
+                        ? `Visit: ${formatDateTime(scan.scheduledFor)}`
+                        : `Preferred: ${scan.preferredDate ?? "any day"}`}
                     </p>
-                    {booking.message && <p className="mt-1 text-sm">"{booking.message}"</p>}
                   </div>
-                  <Badge badge={BOOKING_BADGE[booking.status]} fallback={booking.status} />
-                </div>
+                  <StatusBadge badge={SCAN_BADGE[scan.status]} fallback={scan.status} />
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
 
-                {booking.status === BOOKING_STATUS.REQUESTED && (
-                  <div className="flex gap-2">
-                    <Button
-                      onClick={() => changeBooking(booking.id, BOOKING_STATUS.CONFIRMED)}
-                      disabled={busyId === booking.id}
-                    >
-                      Confirm
-                    </Button>
-                    <Button
-                      variant="secondary"
-                      onClick={() => changeBooking(booking.id, BOOKING_STATUS.DECLINED)}
-                      disabled={busyId === booking.id}
-                    >
-                      Decline
-                    </Button>
+        <section className="card p-0">
+          <header className="flex items-center justify-between border-b border-border px-5 py-4">
+            <h3 className="flex items-center gap-2 font-semibold text-ink">
+              <Icon name="calendar" className="h-5 w-5 text-accent-dark" /> Booking requests
+            </h3>
+            {newRequests > 0 && <Badge tone="gold">{newRequests} new</Badge>}
+          </header>
+          {bookings.length === 0 ? (
+            <p className="px-5 py-10 text-center text-sm text-muted">No booking requests yet.</p>
+          ) : (
+            <ul className="divide-y divide-border">
+              {bookings.map((booking) => (
+                <li key={booking.id} className="space-y-3 px-5 py-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <Link
+                        to={buildRoute(ROUTES.LISTING, { id: booking.listingId })}
+                        className="block truncate font-medium text-ink hover:text-primary"
+                      >
+                        {titleOf(booking.listingId)}
+                      </Link>
+                      <p className="mt-0.5 text-sm text-muted">
+                        {booking.kind === BOOKING_KIND.STAY
+                          ? `Stay · ${booking.date} → ${booking.checkOut}`
+                          : `Viewing · ${booking.date}`}
+                      </p>
+                    </div>
+                    <StatusBadge badge={BOOKING_BADGE[booking.status]} fallback={booking.status} />
                   </div>
-                )}
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+                  {booking.message && (
+                    <p className="rounded-xl bg-sand/60 px-3 py-2 text-sm text-text">
+                      “{booking.message}”
+                    </p>
+                  )}
+                  {booking.status === BOOKING_STATUS.REQUESTED && (
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        onClick={() => changeBooking(booking.id, BOOKING_STATUS.CONFIRMED)}
+                        loading={busyId === booking.id}
+                      >
+                        <Icon name="check" className="h-4 w-4" /> Confirm
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        onClick={() => changeBooking(booking.id, BOOKING_STATUS.DECLINED)}
+                        disabled={busyId === booking.id}
+                      >
+                        Decline
+                      </Button>
+                    </div>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      </div>
     </div>
   );
 }
