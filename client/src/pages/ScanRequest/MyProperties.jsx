@@ -1,7 +1,7 @@
 // "My properties" panel under the seller form: my scan requests and the booking
 // requests on my listings (with Confirm / Decline). Owner: M3.
 // refreshKey: change it to reload (e.g. after a new scan request).
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { BOOKING_KIND, BOOKING_STATUS, SCAN_STATUS } from "@realestate/shared";
 import Button from "../../components/Button.jsx";
@@ -42,25 +42,28 @@ const formatDateTime = (value) =>
 export default function MyProperties({ refreshKey }) {
   const [scans, setScans] = useState([]);
   const [bookings, setBookings] = useState([]);
-  const [loading, setLoading] = useState(true);
+  // loadedKey = which refreshKey the lists belong to. While it differs we are loading
+  // (worked out here, not set inside the effect).
+  const [loadedKey, setLoadedKey] = useState(null);
+  const loading = loadedKey !== refreshKey;
   const [error, setError] = useState("");
   const [busyId, setBusyId] = useState(null);
 
-  const load = useCallback(() => {
-    setLoading(true);
-    setError("");
-    return Promise.all([getMyScanRequests(), getMyBookings("seller")])
+  useEffect(() => {
+    let cancelled = false;
+    Promise.all([getMyScanRequests(), getMyBookings("seller")])
       .then(([scanItems, bookingItems]) => {
+        if (cancelled) return;
         setScans(scanItems);
         setBookings(bookingItems);
+        setError("");
       })
-      .catch((err) => setError(err.message))
-      .finally(() => setLoading(false));
-  }, []);
-
-  useEffect(() => {
-    load();
-  }, [load, refreshKey]);
+      .catch((err) => !cancelled && setError(err.message))
+      .finally(() => !cancelled && setLoadedKey(refreshKey));
+    return () => {
+      cancelled = true;
+    };
+  }, [refreshKey]);
 
   async function changeBooking(id, status) {
     setBusyId(id);
