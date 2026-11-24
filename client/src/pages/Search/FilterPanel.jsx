@@ -1,7 +1,7 @@
 // Search filters. Owner: M3.
 // Dropdowns apply as soon as they change. Text and prices apply when you press "Apply"
 // (so the page doesn't reload results on every key press).
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { DISTRICTS, LISTING_TYPE } from "@realestate/shared";
 import Button from "../../components/Button.jsx";
 import Input from "../../components/Input.jsx";
@@ -19,11 +19,8 @@ export default function FilterPanel({ filters, onChange, onClear }) {
     maxPrice: filters.maxPrice,
   });
   const [error, setError] = useState("");
-
-  // Back/forward buttons or "Clear" change the URL: show those values in the boxes
-  useEffect(() => {
-    setDraft({ q: filters.q, minPrice: filters.minPrice, maxPrice: filters.maxPrice });
-  }, [filters.q, filters.minPrice, filters.maxPrice]);
+  // When the URL changes (back/forward, "Clear"), Search.jsx gives this panel a new key,
+  // so it starts again with the URL's values. No effect needed to copy them in.
 
   function handleApply(event) {
     event.preventDefault();
