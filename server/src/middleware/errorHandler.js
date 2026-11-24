@@ -1,8 +1,10 @@
 // Catches any error thrown in a route and sends it in the standard shape: { error: "message" }.
 // Throw with a status like this:  throw httpError(404, "Listing not found")
-export function httpError(status, message) {
+// Extra fields go in the third argument: throw httpError(403, "Verify first", { userId: 7 })
+export function httpError(status, message, extra) {
   const err = new Error(message);
   err.status = status;
+  err.extra = extra;
   return err;
 }
 
@@ -10,5 +12,6 @@ export function httpError(status, message) {
 export function errorHandler(err, req, res, next) {
   const status = err.status ?? 500;
   if (status >= 500) console.error(err);
-  res.status(status).json({ error: status >= 500 ? "Something went wrong" : err.message });
+  if (status >= 500) return res.status(status).json({ error: "Something went wrong" });
+  res.status(status).json({ error: err.message, ...err.extra });
 }

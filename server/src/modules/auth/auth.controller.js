@@ -1,8 +1,7 @@
 // AUTH controllers: read the request, call the service, send the response.
 // No SQL in here. Database work belongs in auth.service.js.
-import { ROLES } from "@realestate/shared";
+import { LIMITS, ROLES } from "@realestate/shared";
 import { httpError } from "../../middleware/errorHandler.js";
-import { notImplemented } from "../../utils/notImplemented.js";
 import * as authService from "./auth.service.js";
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -44,19 +43,45 @@ export async function signup(req, res) {
 // POST /api/auth/verify-otp   (public)
 // in:  { userId, otp }
 // out: 200 { token, user: User }
-export const verifyOtp = notImplemented("POST /api/auth/verify-otp");
+export async function verifyOtp(req, res) {
+  const { userId, otp } = req.body ?? {};
+  const id = readUserId(userId);
+  const otpPattern = new RegExp(`^\\d{${LIMITS.OTP_LENGTH}}$`);
+  if (typeof otp !== "string" || !otpPattern.test(otp)) {
+    throw httpError(400, `The code must be ${LIMITS.OTP_LENGTH} digits`);
+  }
+  res.json(await authService.verifyOtp({ userId: id, otp }));
+}
 
 // POST /api/auth/resend-otp   (public)
 // in:  { userId }
 // out: 200 { otpSentTo }
-export const resendOtp = notImplemented("POST /api/auth/resend-otp");
+export async function resendOtp(req, res) {
+  const id = readUserId(req.body?.userId);
+  res.json(await authService.resendOtp({ userId: id }));
+}
 
 // POST /api/auth/login   (public)
 // in:  { email, password }
 // out: 200 { token, user: User } · 401 wrong email or password · 403 { error, userId } if email not verified
-export const login = notImplemented("POST /api/auth/login");
+export async function login(req, res) {
+  const { email, password } = req.body ?? {};
+  if (typeof email !== "string" || typeof password !== "string" || !email.trim() || !password) {
+    throw httpError(400, "Email and password are required");
+  }
+  res.json(await authService.login({ email: email.trim().toLowerCase(), password }));
+}
 
 // GET /api/auth/me   (logged in)
 // in:  -
 // out: 200 { user: User }
-export const me = notImplemented("GET /api/auth/me");
+export async function me(req, res) {
+  res.json(await authService.getMe(req.user.id));
+}
+
+// userId may arrive as 7 or "7"
+function readUserId(value) {
+  const id = Number(value);
+  if (!Number.isInteger(id) || id <= 0) throw httpError(400, "userId is required");
+  return id;
+}

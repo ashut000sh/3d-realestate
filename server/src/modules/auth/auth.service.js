@@ -5,6 +5,8 @@ import bcrypt from "bcryptjs";
 import { LIMITS } from "@realestate/shared";
 import { query } from "../../config/db.js";
 import { httpError } from "../../middleware/errorHandler.js";
+import { signToken } from "../../middleware/auth.js";
+import { toCamel } from "../../utils/toCamel.js";
 import { sendOtpEmail } from "./auth.mail.js";
 
 // "sita@gmail.com" -> "s***@gmail.com"
@@ -50,4 +52,89 @@ export async function signup({ fullName, email, phone, password, role }) {
 
   await issueOtp(user.id, user.email);
   return { userId: user.id, otpSentTo: maskEmail(user.email) };
+}
+
+const USER_COLUMNS = "id, full_name, email, phone, role, is_verified, created_at";
+
+// Compared against when the email doesn't exist, so a wrong email takes as long as a
+// wrong password and nobody can probe which emails are registered by timing.
+const DUMMY_HASH = bcrypt.hashSync("not-a-real-password", 10);
+
+async function findUserById(userId) {
+  const { rows } = await query(`SELECT ${USER_COLUMNS} FROM users WHERE id = $1`, [userId]);
+  return rows[0] ?? null;
+}
+
+function withToken(row) {
+  const user = toCamel(row);
+  return { token: signToken(user), user };
+}
+
+export async function verifyOtp({ userId, otp }) {
+  const user = await findUserById(userId);
+  if (!user) throw httpError(404, "Account not found");
+  if (user.is_verified) throw httpError(409, "This account is already verified, please log in");
+
+  // Only the newest code counts: pressing "Resend" makes older codes useless.
+  const { rows } = await query(
+    `SELECT id, code_hash FROM otp_codes
+     WHERE user_id = $1 AND used_at IS NULL AND expires_at > now()
+     ORDER BY id DESC LIMIT 1`,
+    [userId],
+  );
+  const code = rows[0];
+  if (!code) throw httpError(400, "This code has expired. Please request a new one");
+  if (!(await bcrypt.compare(otp, code.code_hash))) throw httpError(400, "Wrong code");
+
+  await query("UPDATE otp_codes SET used_at = now() WHERE id = $1", [code.id]);
+  const updated = await query(
+    `UPDATE users SET is_verified = true WHERE id = $1 RETURNING ${USER_COLUMNS}`,
+    [userId],
+  );
+  return withToken(updated.rows[0]);
+}
+
+export async function resendOtp({ userId }) {
+  const user = await findUserById(userId);
+  if (!user) throw httpError(404, "Account not found");
+  if (user.is_verified) throw httpError(409, "This account is already verified, please log in");
+
+  // otp_codes has no created_at, so work it out from expires_at.
+  const { rows } = await query(
+    `SELECT 1 FROM otp_codes
+     WHERE user_id = $1
+       AND expires_at - make_interval(mins => $2) > now() - make_interval(secs => $3)
+     LIMIT 1`,
+    [userId, LIMITS.OTP_EXPIRY_MINUTES, LIMITS.OTP_RESEND_SECONDS],
+  );
+  if (rows.length > 0) {
+    throw httpError(429, `Please wait ${LIMITS.OTP_RESEND_SECONDS} seconds before asking again`);
+  }
+
+  await issueOtp(user.id, user.email);
+  return { otpSentTo: maskEmail(user.email) };
+}
+
+export async function login({ email, password }) {
+  const { rows } = await query(
+    `SELECT ${USER_COLUMNS}, password_hash FROM users WHERE email = $1`,
+    [email],
+  );
+  const row = rows[0];
+  const passwordOk = await bcrypt.compare(password, row?.password_hash ?? DUMMY_HASH);
+  if (!row || !passwordOk) throw httpError(401, "Wrong email or password");
+
+  if (!row.is_verified) {
+    throw httpError(403, "Please verify your email first", { userId: row.id });
+  }
+
+  delete row.password_hash;
+  return withToken(row);
+}
+
+export async function getMe(userId) {
+  const user = await findUserById(userId);
+  // Token is valid but the account was deleted since it was issued
+  if (!user) throw httpError(401, "Account not found, please log in again");
+  return { user: toCamel(user) };
 }
