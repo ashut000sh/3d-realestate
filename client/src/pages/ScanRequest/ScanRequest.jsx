@@ -6,7 +6,7 @@
 //
 // Sellers only (Simon Khatri protects the route with role={ROLES.SELLER}).
 // Step 1 property details -> Step 2 photos -> Step 3 scan request, then "My properties" below.
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import Button from "../../components/Button.jsx";
 import Input from "../../components/Input.jsx";
@@ -50,9 +50,22 @@ export default function ScanRequest() {
   const [listing, setListing] = useState(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  // Chosen photos: [{ file, url }]. url is a preview link made ONCE when the photos are picked
+  // (not on every redraw) and freed when they change or the page closes.
   const [files, setFiles] = useState([]);
+  const previewUrls = useRef([]);
   const [scan, setScan] = useState({ preferredDate: localDate(3), notes: "" });
   const [refreshKey, setRefreshKey] = useState(0);
+
+  useEffect(() => () => previewUrls.current.forEach((url) => URL.revokeObjectURL(url)), []);
+
+  // Swaps the chosen photos and frees the old preview links
+  function replaceFiles(chosen) {
+    previewUrls.current.forEach((url) => URL.revokeObjectURL(url));
+    const next = chosen.map((file) => ({ file, url: URL.createObjectURL(file) }));
+    previewUrls.current = next.map((item) => item.url);
+    setFiles(next);
+  }
 
   if (!tokenStore.get()) {
     return (
@@ -89,7 +102,7 @@ export default function ScanRequest() {
     if (chosen.length > MAX_PHOTOS) setError(`Choose at most ${MAX_PHOTOS} photos`);
     else if (bad) setError(`${bad.name}: only .jpg or .png, up to ${MAX_PHOTO_MB} MB`);
     else setError("");
-    setFiles(chosen.length > MAX_PHOTOS || bad ? [] : chosen);
+    replaceFiles(chosen.length > MAX_PHOTOS || bad ? [] : chosen);
   }
 
   async function handleUpload(event) {
@@ -98,7 +111,10 @@ export default function ScanRequest() {
     setBusy(true);
     setError("");
     try {
-      await uploadListingImages(listing.id, files);
+      await uploadListingImages(
+        listing.id,
+        files.map((item) => item.file),
+      );
       setStep(2);
     } catch (err) {
       setError(err.message);
@@ -133,7 +149,7 @@ export default function ScanRequest() {
   function startOver() {
     setStep(0);
     setListing(null);
-    setFiles([]);
+    replaceFiles([]);
     setScan({ preferredDate: localDate(3), notes: "" });
     setError("");
   }
@@ -170,10 +186,10 @@ export default function ScanRequest() {
               />
               {files.length > 0 && (
                 <ul className="grid grid-cols-3 gap-2 sm:grid-cols-5">
-                  {files.map((file, i) => (
+                  {files.map(({ file, url }, i) => (
                     <li key={file.name + i} className="relative">
                       <img
-                        src={URL.createObjectURL(file)}
+                        src={url}
                         alt={file.name}
                         className="aspect-square w-full rounded-lg object-cover"
                       />

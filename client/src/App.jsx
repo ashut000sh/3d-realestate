@@ -4,6 +4,7 @@
 // only downloads when someone opens them. The first page opens fast.
 import { Suspense, lazy } from "react";
 import { Routes, Route } from "react-router-dom";
+import { ROLES } from "@realestate/shared";
 import Loader from "./components/Loader.jsx";
 import RequireAuth from "./components/RequireAuth.jsx";
 import { ROUTES } from "./constants/routes.js";
@@ -52,11 +53,18 @@ export default function App() {
               </RequireAuth>
             }
           />
-          <Route path={ROUTES.SCAN_REQUEST} element={<ScanRequest />} />
+          <Route
+            path={ROUTES.SCAN_REQUEST}
+            element={
+              <RequireAuth role={ROLES.SELLER}>
+                <ScanRequest />
+              </RequireAuth>
+            }
+          />
           <Route
             path={ROUTES.ADMIN}
             element={
-              <RequireAuth role="admin">
+              <RequireAuth role={ROLES.ADMIN}>
                 <AdminDashboard />
               </RequireAuth>
             }
