@@ -13,6 +13,8 @@ import Icon from "../../components/Icon.jsx";
 import { Skeleton } from "../../components/Loader.jsx";
 import { useAuth } from "../../hooks/useAuth.jsx";
 import { getScanQueue, getStats, getUsers } from "../../services/admin.service.js";
+import AllBookings from "./AllBookings.jsx";
+import Insights from "./Insights.jsx";
 import ScanQueue, { STATUS_META } from "./ScanQueue.jsx";
 
 const STAT_CARDS = [
@@ -134,6 +136,15 @@ export default function AdminDashboard() {
         <p className="text-sm text-danger">Couldn't load the numbers: {stats.error}</p>
       )}
 
+      {/* Insights: charts and trends */}
+      <section className="space-y-5">
+        <div>
+          <h2 className="display text-2xl text-ink">Insights</h2>
+          <p className="text-sm text-muted">How the marketplace is growing and where homes are.</p>
+        </div>
+        <Insights version={statsVersion} />
+      </section>
+
       {/* Scan queue */}
       <section>
         <div className="flex flex-wrap items-end justify-between gap-4">
@@ -185,6 +196,17 @@ export default function AdminDashboard() {
             <ScanQueue requests={queue.data} onChanged={handleChanged} />
           )}
         </div>
+      </section>
+
+      {/* Bookings across the platform */}
+      <section className="space-y-5">
+        <div>
+          <h2 className="display text-2xl text-ink">Bookings</h2>
+          <p className="text-sm text-muted">
+            Every viewing and stay, with the guest and the seller.
+          </p>
+        </div>
+        <AllBookings />
       </section>
 
       {/* Users */}

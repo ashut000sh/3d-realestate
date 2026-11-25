@@ -1,7 +1,7 @@
 // ADMIN controllers: read the request, call the service, send the response.
 // No SQL in here. Database work belongs in admin.service.js.
 // Every route here is admin only (requireRole(ROLES.ADMIN) in admin.routes.js).
-import { ROLES, SCAN_STATUS } from "@realestate/shared";
+import { BOOKING_STATUS, ROLES, SCAN_STATUS } from "@realestate/shared";
 import { httpError } from "../../middleware/errorHandler.js";
 import * as adminService from "./admin.service.js";
 
@@ -24,6 +24,22 @@ export async function scanQueue(req, res) {
 // out: 200 { items: User[] }
 export async function users(req, res) {
   res.json(await adminService.listUsers(readFilter(req.query.role, ROLES, "role")));
+}
+
+// GET /api/admin/insights   (admin)
+// in:  -
+// out: 200 Insights (docs/API.md): numbers for the dashboard charts
+export async function insights(_req, res) {
+  res.json(await adminService.getInsights());
+}
+
+// GET /api/admin/bookings   (admin)
+// in:  query: ?status
+// out: 200 { items: Booking[] }   every booking on the platform, newest first (max 200)
+export async function bookings(req, res) {
+  res.json(
+    await adminService.listAllBookings(readFilter(req.query.status, BOOKING_STATUS, "status")),
+  );
 }
 
 // Optional filter: missing or "" = no filter, otherwise must be one of the constant's values

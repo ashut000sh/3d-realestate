@@ -148,6 +148,8 @@ Message = {
 | `API.ADMIN.STATS` | `GET /api/admin/stats` | admin | `-` | `200 { listings, users, pendingScans, bookingsThisWeek }` |
 | `API.ADMIN.SCAN_QUEUE` | `GET /api/admin/scan-requests` | admin | `query: ?status` | `200 { items: ScanRequest[] }` · each item also has `sellerFullName` (for the dashboard's seller column) |
 | `API.ADMIN.USERS` | `GET /api/admin/users` | admin | `query: ?role` | `200 { items: User[] }` |
+| `API.ADMIN.INSIGHTS` | `GET /api/admin/insights` | admin | `-` | `200 { listingsByDistrict: [{ district, total, live }], listingsByType: [{ type, count, avgPrice }], listingsByStatus: [{ status, count }], weekly: [{ weekStart, signups, bookings, listings }] (last 8 weeks, oldest first), scanFunnel: [{ status, count }], bookingsByStatus: [{ status, count }], topListings: [{ id, title, district, type, saves, bookings, chats }] (top 5 live), totals: { withTour, unverifiedUsers, messagesThisWeek, saves } }` |
+| `API.ADMIN.BOOKINGS` | `GET /api/admin/bookings` | admin | `query: ?status` | `200 { items: Booking[] }` newest first, max 200; each also has `sellerFullName` |
 
 ---
 
