@@ -1,6 +1,7 @@
 // LISTINGS controllers: read the request, call the service, send the response.
 // No SQL in here. Database work belongs in listings.service.js.
 import { DISTRICTS, LIMITS, LISTING_TYPE } from "@realestate/shared";
+import { verifyToken } from "../../middleware/auth.js";
 import { httpError } from "../../middleware/errorHandler.js";
 import { notImplemented } from "../../utils/notImplemented.js";
 import * as listingsService from "./listings.service.js";
@@ -55,8 +56,12 @@ export async function compare(req, res) {
 // GET /api/listings/:id   (public)
 // in:  -
 // out: 200 { listing: Listing }
+// Drafts are only shown to their seller and admins (see getVisibleListing).
+// The route is public, so the token is optional here: read it if there is one.
 export async function one(req, res) {
-  res.json(await listingsService.getListing(readId(req.params.id, "id")));
+  const header = req.headers.authorization ?? "";
+  const viewer = header.startsWith("Bearer ") ? verifyToken(header.slice(7)) : null;
+  res.json(await listingsService.getVisibleListing(readId(req.params.id, "id"), viewer));
 }
 
 // POST /api/listings   (seller)

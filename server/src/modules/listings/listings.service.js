@@ -1,6 +1,6 @@
 // LISTINGS service: all database queries for this module live here.
 // Controllers call these functions; nothing else touches the listings tables.
-import { LIMITS, LISTING_STATUS } from "@realestate/shared";
+import { LIMITS, LISTING_STATUS, ROLES } from "@realestate/shared";
 import { query } from "../../config/db.js";
 import { httpError } from "../../middleware/errorHandler.js";
 
@@ -111,6 +111,21 @@ async function findListing(id) {
 export async function getListing(id) {
   const row = await findListing(id);
   if (!row) throw httpError(404, "Listing not found");
+  return { listing: toListing(row) };
+}
+
+// GET /api/listings/:id. Live listings are public. Drafts and listings waiting for their scan
+// are only shown to their seller and to admins; everyone else gets the same 404 as a
+// missing listing, so nobody can tell an unpublished listing exists.
+// viewer: { id, role } from the token, or null when not logged in.
+export async function getVisibleListing(id, viewer) {
+  const row = await findListing(id);
+  const canSee =
+    row &&
+    (row.status === LISTING_STATUS.LIVE ||
+      viewer?.id === row.seller_id ||
+      viewer?.role === ROLES.ADMIN);
+  if (!canSee) throw httpError(404, "Listing not found");
   return { listing: toListing(row) };
 }
 
