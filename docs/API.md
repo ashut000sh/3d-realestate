@@ -46,7 +46,7 @@ Listing = {                     // full details on the Listing screen
   tourUrl: "https://.../tour.glb",   // null until a scan is published
   images: ["https://...", "https://..."],
   seller: { id: 4, fullName: "Ram Thapa" },
-  createdAt: "..."
+  createdAt: "...",
 }
 
 ScanRequest = {
@@ -58,7 +58,7 @@ ScanRequest = {
   scheduledFor: null,           // set by admin
   notes: "Gate code 1234",
   status: "pending",            // SCAN_STATUS
-  createdAt: "..."
+  createdAt: "...",
 }
 
 Booking = {
@@ -70,7 +70,7 @@ Booking = {
   checkOut: null,               // only for kind "stay"
   message: "Can I come after 4pm?",
   status: "requested",          // BOOKING_STATUS
-  createdAt: "..."
+  createdAt: "...",
   listing: { id, title, type, district, price, coverImageUrl },  // so screens never show bare ids
   userFullName,  // who booked (for the seller)
 }
@@ -88,7 +88,7 @@ Message = {
   conversationId: 2,
   senderId: 7,
   body: "Is the price negotiable?",
-  createdAt: "..."
+  createdAt: "...",
 }
 ```
 

@@ -47,7 +47,9 @@ function toBooking(row) {
 }
 
 async function getBooking(id) {
-  const { rows } = await query(`SELECT ${BOOKING_COLUMNS} FROM ${BOOKING_FROM} WHERE b.id = $1`, [id]);
+  const { rows } = await query(`SELECT ${BOOKING_COLUMNS} FROM ${BOOKING_FROM} WHERE b.id = $1`, [
+    id,
+  ]);
   if (rows.length === 0) throw httpError(404, "Booking not found");
   return toBooking(rows[0]);
 }
