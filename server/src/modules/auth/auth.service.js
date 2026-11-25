@@ -54,6 +54,9 @@ export async function signup({ fullName, email, phone, password, role }) {
   return { userId: user.id, otpSentTo: maskEmail(user.email) };
 }
 
+// Wrong guesses allowed per code. After that the code is used up: press "Resend" for a new one.
+export const MAX_OTP_ATTEMPTS = 5;
+
 const USER_COLUMNS = "id, full_name, email, phone, role, is_verified, created_at";
 
 // Compared against when the email doesn't exist, so a wrong email takes as long as a
@@ -78,13 +81,27 @@ export async function verifyOtp({ userId, otp }) {
   // Only the newest code counts: pressing "Resend" makes older codes useless.
   const { rows } = await query(
     `SELECT id, code_hash FROM otp_codes
-     WHERE user_id = $1 AND used_at IS NULL AND expires_at > now()
+     WHERE user_id = $1 AND used_at IS NULL AND expires_at > now() AND attempts < $2
      ORDER BY id DESC LIMIT 1`,
-    [userId],
+    [userId, MAX_OTP_ATTEMPTS],
   );
   const code = rows[0];
   if (!code) throw httpError(400, "This code has expired. Please request a new one");
-  if (!(await bcrypt.compare(otp, code.code_hash))) throw httpError(400, "Wrong code");
+  if (!(await bcrypt.compare(otp, code.code_hash))) {
+    // Count the wrong try in one statement, so guesses sent at the same time are all counted.
+    // The last allowed wrong try also uses the code up.
+    const counted = await query(
+      `UPDATE otp_codes
+          SET attempts = attempts + 1,
+              used_at = CASE WHEN attempts + 1 >= $2 THEN now() ELSE used_at END
+        WHERE id = $1
+        RETURNING attempts`,
+      [code.id, MAX_OTP_ATTEMPTS],
+    );
+    const left = MAX_OTP_ATTEMPTS - counted.rows[0].attempts;
+    if (left <= 0) throw httpError(429, "Too many wrong codes. Please request a new one");
+    throw httpError(400, `Wrong code. ${left} ${left === 1 ? "try" : "tries"} left`);
+  }
 
   await query("UPDATE otp_codes SET used_at = now() WHERE id = $1", [code.id]);
   const updated = await query(
