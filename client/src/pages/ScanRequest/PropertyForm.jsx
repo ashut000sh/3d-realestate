@@ -4,23 +4,23 @@ import { useState } from "react";
 import { MapContainer, Marker, TileLayer, useMapEvents } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import markerIcon from "leaflet/dist/images/marker-icon.png";
-import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
-import markerShadow from "leaflet/dist/images/marker-shadow.png";
 import { DISTRICTS, LISTING_TYPE } from "@realestate/shared";
 import Button from "../../components/Button.jsx";
-import Input from "../../components/Input.jsx";
+import Icon from "../../components/Icon.jsx";
+import Input, { Select, Textarea } from "../../components/Input.jsx";
 import { LISTING_TYPE_LABEL } from "../../utils/formatPrice.js";
 
-L.Icon.Default.mergeOptions({
-  iconUrl: markerIcon,
-  iconRetinaUrl: markerIcon2x,
-  shadowUrl: markerShadow,
+// Brand-coloured pin instead of Leaflet's default blue marker
+const PIN = L.divIcon({
+  className: "",
+  iconSize: [36, 36],
+  iconAnchor: [18, 34],
+  html:
+    '<svg width="36" height="36" viewBox="0 0 24 24"><path d="M12 22s-7-6.2-7-11.5A7 7 0 0 1 19 10.5C19 15.8 12 22 12 22Z" ' +
+    'fill="#0e2a23" stroke="#fff" stroke-width="1.5"/><circle cx="12" cy="10.5" r="2.6" fill="#c39a4b"/></svg>',
 });
 
 const KATHMANDU = [27.7172, 85.324];
-const FIELD_CLASS =
-  "w-full rounded-lg border border-border bg-surface px-3 py-2 outline-none focus:border-primary";
 
 // Puts the marker where the user clicks
 function ClickToPlace({ onPick }) {
@@ -87,7 +87,13 @@ export default function PropertyForm({ onSubmit, submitting, serverError }) {
   }
 
   return (
-    <form onSubmit={handleSubmit} noValidate className="space-y-4">
+    <form onSubmit={handleSubmit} noValidate className="space-y-5">
+      <div>
+        <h2 className="display text-2xl text-ink">Tell us about the property</h2>
+        <p className="mt-1 text-sm text-muted">
+          It's saved as a draft until our team has scanned it.
+        </p>
+      </div>
       <Input
         label="Title"
         name="title"
@@ -98,16 +104,13 @@ export default function PropertyForm({ onSubmit, submitting, serverError }) {
       />
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <label className="block">
-          <span className="mb-1 block text-sm font-medium">Type</span>
-          <select className={FIELD_CLASS} value={form.type} onChange={set("type")}>
-            {Object.values(LISTING_TYPE).map((type) => (
-              <option key={type} value={type}>
-                {LISTING_TYPE_LABEL[type]}
-              </option>
-            ))}
-          </select>
-        </label>
+        <Select label="Type" name="type" value={form.type} onChange={set("type")}>
+          {Object.values(LISTING_TYPE).map((type) => (
+            <option key={type} value={type}>
+              {LISTING_TYPE_LABEL[type]}
+            </option>
+          ))}
+        </Select>
         <Input
           label={
             form.type === LISTING_TYPE.RENT
@@ -127,16 +130,13 @@ export default function PropertyForm({ onSubmit, submitting, serverError }) {
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <label className="block">
-          <span className="mb-1 block text-sm font-medium">District</span>
-          <select className={FIELD_CLASS} value={form.district} onChange={set("district")}>
-            {DISTRICTS.map((district) => (
-              <option key={district} value={district}>
-                {district}
-              </option>
-            ))}
-          </select>
-        </label>
+        <Select label="District" name="district" value={form.district} onChange={set("district")}>
+          {DISTRICTS.map((district) => (
+            <option key={district} value={district}>
+              {district}
+            </option>
+          ))}
+        </Select>
         <Input
           label="Address"
           name="address"
@@ -176,41 +176,48 @@ export default function PropertyForm({ onSubmit, submitting, serverError }) {
         />
       </div>
 
-      <label htmlFor="description" className="block">
-        <span className="mb-1 block text-sm font-medium">Description</span>
-        <textarea
-          id="description"
-          rows={4}
-          value={form.description}
-          onChange={set("description")}
-          placeholder="What makes it a good home? Parking, water, road access..."
-          className={FIELD_CLASS}
-        />
-      </label>
+      <Textarea
+        label="Description"
+        id="description"
+        name="description"
+        rows={4}
+        value={form.description}
+        onChange={set("description")}
+        placeholder="What makes it a good home? Parking, water, road access..."
+      />
 
       <div>
-        <span className="mb-1 block text-sm font-medium">Location on the map</span>
-        <p className="mb-2 text-sm text-muted">
+        <span className="label">Location on the map</span>
+        <p className="mb-3 flex items-center gap-1.5 text-sm text-muted">
+          <Icon name="pin" className="h-4 w-4 shrink-0 text-accent-dark" />
           {point
             ? `Marked at ${point[0].toFixed(5)}, ${point[1].toFixed(5)}. Click again to move it.`
             : "Click the map where the property is (optional, but buyers find it more easily)."}
         </p>
-        <div className="overflow-hidden rounded-lg border border-border">
-          <MapContainer center={KATHMANDU} zoom={12} className="h-64 w-full">
+        <div className="overflow-hidden rounded-2xl ring-1 ring-border">
+          <MapContainer center={KATHMANDU} zoom={12} className="h-72 w-full cursor-crosshair">
             <TileLayer
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
             <ClickToPlace onPick={setPoint} />
-            {point && <Marker position={point} />}
+            {point && <Marker position={point} icon={PIN} />}
           </MapContainer>
         </div>
       </div>
 
-      {serverError && <p className="text-sm text-danger">{serverError}</p>}
+      {serverError && (
+        <p
+          className="flex items-center gap-2 rounded-xl bg-danger-soft px-4 py-3 text-sm text-danger"
+          role="alert"
+        >
+          <Icon name="alert" className="h-4 w-4" /> {serverError}
+        </p>
+      )}
 
-      <Button type="submit" className="w-full" disabled={submitting}>
+      <Button type="submit" size="lg" className="w-full" loading={submitting}>
         {submitting ? "Saving..." : "Save and continue"}
+        {!submitting && <Icon name="arrowRight" className="h-4 w-4" />}
       </Button>
     </form>
   );

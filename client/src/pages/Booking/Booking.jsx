@@ -10,13 +10,26 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { BOOKING_KIND, LISTING_TYPE } from "@realestate/shared";
 import Button from "../../components/Button.jsx";
-import Input from "../../components/Input.jsx";
-import Loader from "../../components/Loader.jsx";
+import Badge from "../../components/Badge.jsx";
+import EmptyState from "../../components/EmptyState.jsx";
+import Icon from "../../components/Icon.jsx";
+import Input, { Textarea } from "../../components/Input.jsx";
+import { Skeleton } from "../../components/Loader.jsx";
 import { ROUTES, buildRoute } from "../../constants/routes.js";
 import { tokenStore } from "../../services/api.js";
 import { createBooking } from "../../services/bookings.service.js";
 import { getListing } from "../../services/listings.service.js";
 import { formatPrice } from "../../utils/formatPrice.js";
+import { mediaUrl } from "../../utils/mediaUrl.js";
+
+// "2026-12-20" -> "Sun, 20 Dec 2026"
+const prettyDate = (value) =>
+  new Date(`${value}T00:00:00`).toLocaleDateString("en-GB", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
 
 const MAX_MESSAGE_LENGTH = 1000;
 
@@ -54,21 +67,24 @@ export default function Booking() {
   }, [id]);
 
   if (loadError) {
+    const notFound = loadError.status === 404;
     return (
-      <main className="page space-y-3">
-        <h1 className="page-title">
-          {loadError.status === 404 ? "Property not found" : "Couldn't load this property"}
-        </h1>
-        <Link to={ROUTES.SEARCH} className="font-medium text-primary hover:underline">
-          Back to search
-        </Link>
+      <main className="page">
+        <EmptyState
+          icon={notFound ? "home" : "alert"}
+          tone={notFound ? "neutral" : "danger"}
+          title={notFound ? "Property not found" : "Couldn't load this property"}
+          text={notFound ? "It may have been removed, or the link is wrong." : loadError.message}
+          action={<Button to={ROUTES.SEARCH}>Explore other homes</Button>}
+        />
       </main>
     );
   }
   if (!listing) {
     return (
-      <main className="page">
-        <Loader />
+      <main className="page grid gap-8 lg:grid-cols-[1fr_400px]">
+        <Skeleton className="h-96" />
+        <Skeleton className="h-96" />
       </main>
     );
   }
@@ -82,30 +98,41 @@ export default function Booking() {
   if (booking) {
     return (
       <main className="page">
-        <div className="card mx-auto max-w-lg space-y-4 text-center">
-          <p className="text-4xl" aria-hidden="true">
-            ✓
+        <div className="card mx-auto max-w-xl animate-scale-in p-8 text-center sm:p-12">
+          <span className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-success-soft text-success">
+            <Icon name="check" className="h-10 w-10" strokeWidth={2.5} />
+          </span>
+          <h1 className="display mt-6 text-3xl text-ink">Request sent</h1>
+          <p className="mt-3 text-muted">
+            The seller will confirm it soon. We'll keep it in your messages too.
           </p>
-          <h1 className="page-title">Request sent</h1>
-          <p className="text-muted">
-            {isStay
-              ? `Your stay at ${listing.title} from ${booking.date} to ${booking.checkOut} is requested.`
-              : `Your viewing of ${listing.title} on ${booking.date} is requested.`}{" "}
-            The seller will confirm it soon.
-          </p>
-          <div className="flex flex-col gap-2 sm:flex-row sm:justify-center">
-            <Link
-              to={ROUTES.HOME}
-              className="rounded-lg bg-primary px-4 py-2 font-medium text-white hover:bg-primary-dark"
-            >
-              Back to home
-            </Link>
-            <Link
-              to={listingUrl}
-              className="rounded-lg border border-border px-4 py-2 font-medium hover:bg-background"
-            >
+
+          <div className="mt-8 flex items-center gap-4 rounded-2xl bg-sand/60 p-4 text-left">
+            {listing.images?.[0] && (
+              <img
+                src={mediaUrl(listing.images[0])}
+                alt=""
+                className="h-16 w-20 rounded-xl object-cover"
+              />
+            )}
+            <div className="min-w-0">
+              <p className="truncate font-semibold text-ink">{listing.title}</p>
+              <p className="text-sm text-muted">
+                {isStay
+                  ? `${prettyDate(booking.date)} → ${prettyDate(booking.checkOut)}`
+                  : prettyDate(booking.date)}
+              </p>
+            </div>
+            <Badge tone="warning" dot className="ml-auto">
+              Requested
+            </Badge>
+          </div>
+
+          <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
+            <Button to={ROUTES.HOME}>Back to home</Button>
+            <Button to={listingUrl} variant="secondary">
               Back to the property
-            </Link>
+            </Button>
           </div>
         </div>
       </main>
@@ -161,86 +188,140 @@ export default function Booking() {
 
   return (
     <main className="page">
-      <div className="mx-auto max-w-lg space-y-6">
-        <Link to={listingUrl} className="text-sm text-muted hover:text-primary">
-          ‹ Back to the property
-        </Link>
+      <Link
+        to={listingUrl}
+        className="inline-flex items-center gap-1 text-sm text-muted hover:text-primary"
+      >
+        <Icon name="arrowLeft" className="h-4 w-4" /> Back to the property
+      </Link>
 
+      <div className="mt-4 grid gap-10 lg:grid-cols-[1fr_400px]">
         <div>
-          <h1 className="page-title">{isStay ? "Book a stay" : "Book a viewing"}</h1>
-          <p className="mt-1 text-muted">
-            {listing.title} · {formatPrice(listing.price, listing.type)}
+          <p className="eyebrow">{isStay ? "Short stay" : "Viewing"}</p>
+          <h1 className="page-title mt-2">{isStay ? "Book your stay" : "Book a viewing"}</h1>
+          <p className="mt-2 text-muted">
+            {isStay
+              ? "Pick your dates. The host confirms before anything is final."
+              : "Choose a day to visit. The seller confirms the time with you."}
           </p>
-        </div>
 
-        <form onSubmit={handleSubmit} noValidate className="card space-y-4">
-          {isStay ? (
-            <div className="grid gap-4 sm:grid-cols-2">
+          <form onSubmit={handleSubmit} noValidate className="card mt-8 space-y-6 p-6 sm:p-8">
+            {isStay ? (
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Input
+                  label="Check-in"
+                  name="date"
+                  type="date"
+                  icon="calendar"
+                  min={today}
+                  value={form.date}
+                  onChange={set("date")}
+                  error={errors.date}
+                />
+                <Input
+                  label="Check-out"
+                  name="checkOut"
+                  type="date"
+                  icon="calendar"
+                  min={form.date || localDate(1)}
+                  value={form.checkOut}
+                  onChange={set("checkOut")}
+                  error={errors.checkOut}
+                />
+              </div>
+            ) : (
               <Input
-                label="Check-in"
+                label="Viewing date"
                 name="date"
                 type="date"
+                icon="calendar"
                 min={today}
                 value={form.date}
                 onChange={set("date")}
                 error={errors.date}
               />
-              <Input
-                label="Check-out"
-                name="checkOut"
-                type="date"
-                min={form.date || localDate(1)}
-                value={form.checkOut}
-                onChange={set("checkOut")}
-                error={errors.checkOut}
-              />
-            </div>
-          ) : (
-            <Input
-              label="Viewing date"
-              name="date"
-              type="date"
-              min={today}
-              value={form.date}
-              onChange={set("date")}
-              error={errors.date}
-            />
-          )}
+            )}
 
-          {nights > 0 && (
-            <p className="rounded-lg bg-background p-3 text-sm">
-              {nights} {nights === 1 ? "night" : "nights"} · about{" "}
-              <span className="font-semibold">{formatPrice(Number(listing.price) * nights)}</span>{" "}
-              in total
-            </p>
-          )}
-
-          <label htmlFor="message" className="block">
-            <span className="mb-1 block text-sm font-medium">Message to the seller (optional)</span>
-            <textarea
-              id="message"
+            <Textarea
+              label="Message to the seller (optional)"
               name="message"
+              id="message"
               rows={4}
               maxLength={MAX_MESSAGE_LENGTH}
               placeholder={isStay ? "How many guests? Arrival time?" : "Best time to visit?"}
               value={form.message}
               onChange={set("message")}
-              className="w-full rounded-lg border border-border bg-surface px-3 py-2 outline-none focus:border-primary"
+              error={errors.message}
+              hint={`${form.message.length} / ${MAX_MESSAGE_LENGTH}`}
             />
-            {errors.message && (
-              <span className="mt-1 block text-sm text-danger">{errors.message}</span>
+
+            {errors.form && (
+              <p
+                className="flex items-center gap-2 rounded-xl bg-danger-soft px-4 py-3 text-sm text-danger"
+                role="alert"
+              >
+                <Icon name="alert" className="h-4 w-4" /> {errors.form}
+              </p>
             )}
-          </label>
 
-          {errors.form && <p className="text-sm text-danger">{errors.form}</p>}
+            <Button type="submit" size="lg" className="w-full" loading={submitting}>
+              {submitting ? "Sending..." : "Send request"}
+            </Button>
+            <p className="flex items-center justify-center gap-2 text-center text-xs text-muted">
+              <Icon name="shield" className="h-4 w-4" /> Nothing is paid now. The seller confirms or
+              declines your request.
+            </p>
+          </form>
+        </div>
 
-          <Button type="submit" className="w-full" disabled={submitting}>
-            {submitting ? "Sending..." : "Send request"}
-          </Button>
-          <p className="text-center text-xs text-muted">
-            Nothing is paid now. The seller confirms or declines your request.
-          </p>
-        </form>
+        {/* Summary */}
+        <aside className="lg:sticky lg:top-24 lg:self-start">
+          <div className="card overflow-hidden p-0">
+            {listing.images?.[0] && (
+              <img
+                src={mediaUrl(listing.images[0])}
+                alt={listing.title}
+                className="aspect-[16/10] w-full object-cover"
+              />
+            )}
+            <div className="space-y-4 p-6">
+              <div>
+                <p className="font-semibold text-ink">{listing.title}</p>
+                <p className="mt-0.5 flex items-center gap-1 text-sm text-muted">
+                  <Icon name="pin" className="h-3.5 w-3.5" /> {listing.district}
+                </p>
+              </div>
+              <div className="space-y-2 border-t border-border pt-4 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-muted">Price</span>
+                  <span className="font-medium">{formatPrice(listing.price, listing.type)}</span>
+                </div>
+                {isStay && (
+                  <div className="flex justify-between">
+                    <span className="text-muted">Nights</span>
+                    <span className="font-medium">{nights || "–"}</span>
+                  </div>
+                )}
+                {!isStay && form.date && (
+                  <div className="flex justify-between">
+                    <span className="text-muted">Visit</span>
+                    <span className="font-medium">{prettyDate(form.date)}</span>
+                  </div>
+                )}
+              </div>
+              {nights > 0 && (
+                <div className="flex items-baseline justify-between rounded-xl bg-accent-soft px-4 py-3">
+                  <span className="text-sm font-medium text-accent-dark">
+                    {nights} {nights === 1 ? "night" : "nights"} · about
+                  </span>
+                  <span className="display text-xl text-ink">
+                    {formatPrice(Number(listing.price) * nights)}
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+        </aside>
       </div>
     </main>
   );
