@@ -1,4 +1,4 @@
-# [App Name] — 3D Property Tours for Nepal
+# Aawas — 3D Property Tours for Nepal
 
 Final Year Project · Presidential Graduate School · Team of 5
 
