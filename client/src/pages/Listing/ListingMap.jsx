@@ -7,6 +7,9 @@ import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
 import markerShadow from "leaflet/dist/images/marker-shadow.png";
 
 // Vite renames image files, so tell Leaflet where its marker pictures are
+// Leaflet guesses its image folder from the CSS and puts it in front of these URLs,
+// which breaks Vite's file names (the marker shows as a broken image). Turn that off.
+delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconUrl: markerIcon,
   iconRetinaUrl: markerIcon2x,
