@@ -6,6 +6,7 @@ import { ROLES } from "@realestate/shared";
 import { ROUTES } from "../constants/routes.js";
 import { useAuth } from "../hooks/useAuth.jsx";
 import { useSaved } from "../hooks/useSaved.js";
+import { useUnreadCount } from "../hooks/useUnreadCount.js";
 import { getCompareIds, onCompareChange } from "../pages/Compare/compareStore.js";
 import Avatar from "./Avatar.jsx";
 import Button from "./Button.jsx";
@@ -16,8 +17,33 @@ const LINKS = [
   { to: ROUTES.HOME, label: "Home", icon: "home" },
   { to: ROUTES.SEARCH, label: "Explore", icon: "search" },
   { to: ROUTES.COMPARE, label: "Compare", icon: "compare", showCount: true },
-  { to: ROUTES.CHAT, label: "Messages", icon: "chat" },
+  { to: ROUTES.CHAT, label: "Messages", icon: "chat", showUnread: true },
 ];
+
+// The logged-in user's own pages, for the account drop-down (laptop) and the phone menu.
+// One list, so both menus always show the same pages.
+function accountLinks(role) {
+  return [
+    role === ROLES.ADMIN && { to: ROUTES.ADMIN, label: "Admin dashboard", icon: "chart" },
+    role === ROLES.SELLER && { to: ROUTES.MY_LISTINGS, label: "My listings", icon: "home" },
+    role === ROLES.SELLER && { to: ROUTES.SCAN_REQUEST, label: "List a property", icon: "plus" },
+    { to: ROUTES.MY_BOOKINGS, label: "My bookings", icon: "calendar" },
+    { to: ROUTES.SAVED, label: "Saved homes", icon: "heart", count: "saved" },
+  ].filter(Boolean);
+}
+
+// Small round number next to a link (compare count, unread messages)
+function CountBubble({ value, tone = "accent" }) {
+  if (!value) return null;
+  const colours = tone === "danger" ? "bg-danger text-white" : "bg-accent text-ink";
+  return (
+    <span
+      className={`flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[11px] font-bold ${colours}`}
+    >
+      {value > 99 ? "99+" : value}
+    </span>
+  );
+}
 
 const navClass = ({ isActive }) =>
   `relative flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition ${
@@ -30,7 +56,7 @@ function useCompareCount() {
   return count;
 }
 
-function UserMenu({ user, onLogout }) {
+function UserMenu({ user, onLogout, unread }) {
   const [open, setOpen] = useState(false);
   const { count: savedCount } = useSaved();
   const ref = useRef(null);
@@ -73,57 +99,22 @@ function UserMenu({ user, onLogout }) {
             {user.role} account
           </p>
           <div className="my-1 h-px bg-border" />
-          {user.role === ROLES.SELLER && (
+          {accountLinks(user.role).map((link) => (
             <Link
+              key={link.to}
               role="menuitem"
-              to={ROUTES.MY_LISTINGS}
+              to={link.to}
               onClick={() => setOpen(false)}
               className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm hover:bg-sand"
             >
-              <Icon name="home" className="h-4 w-4 text-muted" /> My listings
+              <Icon name={link.icon} className="h-4 w-4 text-muted" /> {link.label}
+              {link.count === "saved" && savedCount > 0 && (
+                <span className="ml-auto rounded-full bg-sand px-2 text-xs font-semibold text-muted">
+                  {savedCount}
+                </span>
+              )}
             </Link>
-          )}
-          {user.role === ROLES.SELLER && (
-            <Link
-              role="menuitem"
-              to={ROUTES.SCAN_REQUEST}
-              onClick={() => setOpen(false)}
-              className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm hover:bg-sand"
-            >
-              <Icon name="grid" className="h-4 w-4 text-muted" /> My properties
-            </Link>
-          )}
-          {user.role === ROLES.ADMIN && (
-            <Link
-              role="menuitem"
-              to={ROUTES.ADMIN}
-              onClick={() => setOpen(false)}
-              className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm hover:bg-sand"
-            >
-              <Icon name="chart" className="h-4 w-4 text-muted" /> Admin dashboard
-            </Link>
-          )}
-          <Link
-            role="menuitem"
-            to={ROUTES.MY_BOOKINGS}
-            onClick={() => setOpen(false)}
-            className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm hover:bg-sand"
-          >
-            <Icon name="calendar" className="h-4 w-4 text-muted" /> My bookings
-          </Link>
-          <Link
-            role="menuitem"
-            to={ROUTES.SAVED}
-            onClick={() => setOpen(false)}
-            className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm hover:bg-sand"
-          >
-            <Icon name="heart" className="h-4 w-4 text-muted" /> Saved homes
-            {savedCount > 0 && (
-              <span className="ml-auto rounded-full bg-sand px-2 text-xs font-semibold text-muted">
-                {savedCount}
-              </span>
-            )}
-          </Link>
+          ))}
           <Link
             role="menuitem"
             to={ROUTES.CHAT}
@@ -131,6 +122,9 @@ function UserMenu({ user, onLogout }) {
             className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm hover:bg-sand"
           >
             <Icon name="chat" className="h-4 w-4 text-muted" /> Messages
+            <span className="ml-auto">
+              <CountBubble value={unread} tone="danger" />
+            </span>
           </Link>
           <button
             role="menuitem"
@@ -149,6 +143,8 @@ export default function Navbar() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const compareCount = useCompareCount();
+  const unread = useUnreadCount();
+  const { count: savedCount } = useSaved();
   const [mobileOpen, setMobileOpen] = useState(false);
 
   function handleLogout() {
@@ -179,11 +175,8 @@ export default function Navbar() {
           {LINKS.map((link) => (
             <NavLink key={link.to} to={link.to} className={navClass} end={link.to === ROUTES.HOME}>
               {link.label}
-              {link.showCount && compareCount > 0 && (
-                <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-accent px-1 text-[11px] font-bold text-ink">
-                  {compareCount}
-                </span>
-              )}
+              {link.showCount && <CountBubble value={compareCount} />}
+              {link.showUnread && <CountBubble value={unread} tone="danger" />}
             </NavLink>
           ))}
         </div>
@@ -191,7 +184,7 @@ export default function Navbar() {
         <div className="ml-auto hidden items-center gap-3 md:flex">
           {sellCta}
           {user ? (
-            <UserMenu user={user} onLogout={handleLogout} />
+            <UserMenu user={user} onLogout={handleLogout} unread={unread} />
           ) : (
             <>
               <Link
@@ -244,14 +237,40 @@ export default function Navbar() {
               >
                 <Icon name={link.icon} className="h-5 w-5 text-muted" />
                 {link.label}
-                {link.showCount && compareCount > 0 && (
-                  <span className="ml-auto rounded-full bg-accent px-2 text-xs font-bold text-ink">
-                    {compareCount}
-                  </span>
-                )}
+                <span className="ml-auto">
+                  {link.showCount && <CountBubble value={compareCount} />}
+                  {link.showUnread && <CountBubble value={unread} tone="danger" />}
+                </span>
               </NavLink>
             ))}
           </div>
+          {user && (
+            <>
+              <p className="eyebrow mt-5 mb-1 px-3">Your account</p>
+              <div className="grid gap-1">
+                {accountLinks(user.role).map((link) => (
+                  <NavLink
+                    key={link.to}
+                    to={link.to}
+                    onClick={() => setMobileOpen(false)}
+                    className={({ isActive }) =>
+                      `flex items-center gap-3 rounded-xl px-3 py-3 font-medium ${
+                        isActive ? "bg-sand text-ink" : "text-text"
+                      }`
+                    }
+                  >
+                    <Icon name={link.icon} className="h-5 w-5 text-muted" />
+                    {link.label}
+                    {link.count === "saved" && (
+                      <span className="ml-auto">
+                        <CountBubble value={savedCount} />
+                      </span>
+                    )}
+                  </NavLink>
+                ))}
+              </div>
+            </>
+          )}
           <div className="mt-4 grid gap-2" onClick={() => setMobileOpen(false)}>
             {sellCta}
             {user ? (

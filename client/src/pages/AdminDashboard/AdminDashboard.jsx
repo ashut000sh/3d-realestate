@@ -16,6 +16,7 @@ import { getScanQueue, getStats, getUsers } from "../../services/admin.service.j
 import AllBookings from "./AllBookings.jsx";
 import Insights from "./Insights.jsx";
 import ScanQueue, { STATUS_META } from "./ScanQueue.jsx";
+import { usePageTitle } from "../../hooks/usePageTitle.js";
 
 const STAT_CARDS = [
   { key: "listings", label: "Listings", icon: "home", tone: "bg-primary-soft text-primary" },
@@ -94,6 +95,8 @@ export default function AdminDashboard() {
       : new Date().getHours() < 18
         ? "Good afternoon"
         : "Good evening";
+
+  usePageTitle("Admin dashboard");
 
   return (
     <main className="page space-y-10">

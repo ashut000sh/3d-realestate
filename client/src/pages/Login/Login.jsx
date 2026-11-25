@@ -17,6 +17,7 @@ import { useAuth } from "../../hooks/useAuth.jsx";
 import AuthLayout from "../../layouts/AuthLayout.jsx";
 import { resendOtp } from "../../services/auth.service.js";
 import { savePendingVerification } from "../Otp/pendingVerification.js";
+import { usePageTitle } from "../../hooks/usePageTitle.js";
 
 // Seed accounts (npm run db:seed). Only shown while developing, never in a real build.
 const DEMO_ACCOUNTS = [
@@ -70,6 +71,8 @@ export default function Login() {
       setSubmitting(false);
     }
   }
+
+  usePageTitle("Log in");
 
   return (
     <AuthLayout

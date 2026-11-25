@@ -15,6 +15,8 @@ import { compareListings } from "../../services/listings.service.js";
 import { LISTING_TYPE_LABEL, formatPrice } from "../../utils/formatPrice.js";
 import { mediaUrl } from "../../utils/mediaUrl.js";
 import { getCompareIds, onCompareChange, removeFromCompare } from "./compareStore.js";
+import Photo from "../../components/Photo.jsx";
+import { usePageTitle } from "../../hooks/usePageTitle.js";
 
 const show = (value) => (value === null || value === undefined ? "–" : value);
 
@@ -86,6 +88,8 @@ export default function Compare() {
     // idsKey covers the ids array
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [idsKey]);
+
+  usePageTitle("Compare homes");
 
   if (loading) {
     return (
@@ -165,7 +169,7 @@ export default function Compare() {
                         <Link to={buildRoute(ROUTES.LISTING, { id: l.id })} className="block">
                           <div className="aspect-[4/3] overflow-hidden rounded-2xl bg-sand">
                             {l.images?.[0] ? (
-                              <img
+                              <Photo
                                 src={mediaUrl(l.images[0])}
                                 alt={l.title}
                                 className="h-full w-full object-cover transition duration-500 group-hover:scale-105"

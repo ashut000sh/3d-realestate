@@ -18,6 +18,7 @@ import { createListing, uploadListingImages } from "../../services/listings.serv
 import { requestScan } from "../../services/scans.service.js";
 import MyProperties from "./MyProperties.jsx";
 import PropertyForm from "./PropertyForm.jsx";
+import { usePageTitle } from "../../hooks/usePageTitle.js";
 
 const STEPS = [
   { label: "Property details", icon: "home" },
@@ -95,6 +96,8 @@ export default function ScanRequest() {
 
   // Free the preview images when they are replaced or the page closes
   useEffect(() => () => photos.forEach((p) => URL.revokeObjectURL(p.url)), [photos]);
+
+  usePageTitle("List your property");
 
   if (!ready) return <Loader fullScreen />;
 

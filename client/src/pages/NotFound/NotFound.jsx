@@ -6,8 +6,11 @@
 import Button from "../../components/Button.jsx";
 import Icon from "../../components/Icon.jsx";
 import { ROUTES } from "../../constants/routes.js";
+import { usePageTitle } from "../../hooks/usePageTitle.js";
 
 export default function NotFound() {
+  usePageTitle("Page not found");
+
   return (
     <main className="page flex min-h-[70vh] flex-col items-center justify-center text-center">
       <div className="relative animate-fade-up">

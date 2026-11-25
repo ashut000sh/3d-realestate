@@ -17,6 +17,7 @@ import {
   readPendingVerification,
   savePendingVerification,
 } from "./pendingVerification.js";
+import { usePageTitle } from "../../hooks/usePageTitle.js";
 
 const LENGTH = LIMITS.OTP_LENGTH;
 const emptyDigits = () => Array(LENGTH).fill("");
@@ -43,6 +44,8 @@ export default function Otp() {
     const timer = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(timer);
   }, []);
+
+  usePageTitle("Verify your email");
 
   if (!pending?.userId) return <Navigate to={ROUTES.SIGNUP} replace />;
 

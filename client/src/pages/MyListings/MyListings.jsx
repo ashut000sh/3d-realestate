@@ -16,6 +16,8 @@ import { LISTING_TYPE_LABEL, formatPrice } from "../../utils/formatPrice.js";
 import { mediaUrl } from "../../utils/mediaUrl.js";
 import EditListingDialog from "./EditListingDialog.jsx";
 import RequestScanDialog from "./RequestScanDialog.jsx";
+import Photo from "../../components/Photo.jsx";
+import { usePageTitle } from "../../hooks/usePageTitle.js";
 
 const STATUS_META = {
   [LISTING_STATUS.LIVE]: { label: "Live", tone: "success" },
@@ -67,7 +69,7 @@ function ListingRow({ item, onEdit, onScan, onPhotos, busy }) {
         className="relative aspect-[4/3] w-full shrink-0 overflow-hidden rounded-xl bg-sand lg:w-44"
       >
         {cover ? (
-          <img src={cover} alt="" loading="lazy" className="h-full w-full object-cover" />
+          <Photo src={cover} alt="" loading="lazy" className="h-full w-full object-cover" />
         ) : (
           <span className="flex h-full flex-col items-center justify-center gap-1 text-xs text-muted">
             <Icon name="image" className="h-6 w-6" /> No photos
@@ -223,6 +225,8 @@ export default function MyListings() {
     saves: items.reduce((sum, i) => sum + i.saves, 0),
     pending: items.reduce((sum, i) => sum + i.pendingBookings, 0),
   };
+
+  usePageTitle("My listings");
 
   return (
     <main className="page space-y-8">

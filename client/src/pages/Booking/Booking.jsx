@@ -21,6 +21,8 @@ import { createBooking } from "../../services/bookings.service.js";
 import { getListing } from "../../services/listings.service.js";
 import { formatPrice } from "../../utils/formatPrice.js";
 import { mediaUrl } from "../../utils/mediaUrl.js";
+import Photo from "../../components/Photo.jsx";
+import { usePageTitle } from "../../hooks/usePageTitle.js";
 
 // "2026-12-20" -> "Sun, 20 Dec 2026"
 const prettyDate = (value) =>
@@ -66,6 +68,8 @@ export default function Booking() {
     };
   }, [id]);
 
+  usePageTitle(listing ? `Book · ${listing.title}` : "Book");
+
   if (loadError) {
     const notFound = loadError.status === 404;
     return (
@@ -109,7 +113,7 @@ export default function Booking() {
 
           <div className="mt-8 flex items-center gap-4 rounded-2xl bg-sand/60 p-4 text-left">
             {listing.images?.[0] && (
-              <img
+              <Photo
                 src={mediaUrl(listing.images[0])}
                 alt=""
                 className="h-16 w-20 rounded-xl object-cover"
@@ -278,7 +282,7 @@ export default function Booking() {
         <aside className="lg:sticky lg:top-24 lg:self-start">
           <div className="card overflow-hidden p-0">
             {listing.images?.[0] && (
-              <img
+              <Photo
                 src={mediaUrl(listing.images[0])}
                 alt={listing.title}
                 className="aspect-[16/10] w-full object-cover"

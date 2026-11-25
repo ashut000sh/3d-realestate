@@ -13,6 +13,7 @@ import Logo from "../../components/Logo.jsx";
 import { ROUTES } from "../../constants/routes.js";
 import { useAuth } from "../../hooks/useAuth.jsx";
 import { hasSeenOnboarding } from "../Onboarding/Onboarding.jsx";
+import { usePageTitle } from "../../hooks/usePageTitle.js";
 
 // Long enough to see the logo, short enough not to annoy
 const MIN_SPLASH_MS = 1100;
@@ -31,6 +32,8 @@ export default function Splash() {
     }, MIN_SPLASH_MS);
     return () => clearTimeout(timer);
   }, [ready, user, navigate]);
+
+  usePageTitle(null);
 
   return (
     <main className="grain relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-ink text-white">

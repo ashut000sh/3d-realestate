@@ -15,6 +15,7 @@ import { getListing } from "../../services/listings.service.js";
 import { formatPrice } from "../../utils/formatPrice.js";
 import { mediaUrl } from "../../utils/mediaUrl.js";
 import { TourViewer, formatLength } from "./TourViewer.js";
+import { usePageTitle } from "../../hooks/usePageTitle.js";
 
 // Uploaded tours live on the API server (/uploads/tours/...). Anything else that starts
 // with "/" (like the seed data's /test-tour.glb) is a file in client/public on this site.
@@ -118,6 +119,8 @@ export default function Tour() {
   const backTo = buildRoute(ROUTES.LISTING, { id });
 
   // ----- no tour / not found -----
+  usePageTitle(listing ? `3D tour · ${listing.title}` : "3D tour");
+
   if (pageError || (listing && !listing.tourUrl)) {
     return (
       <main className="grain flex min-h-screen flex-col items-center justify-center bg-ink px-6 text-center text-white">

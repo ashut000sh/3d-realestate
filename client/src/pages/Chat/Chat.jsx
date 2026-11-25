@@ -14,6 +14,7 @@ import { ROUTES, buildRoute } from "../../constants/routes.js";
 import { useAuth } from "../../hooks/useAuth.jsx";
 import { getConversations, getMessages } from "../../services/chat.service.js";
 import { useChatSocket } from "./useChatSocket.js";
+import { usePageTitle } from "../../hooks/usePageTitle.js";
 
 const PAGE_SIZE = 30; // the server sends 30 messages per page
 const MAX_LENGTH = 2000;
@@ -417,6 +418,8 @@ export default function Chat() {
   }
 
   const selected = conversations?.find((c) => c.id === selectedId);
+
+  usePageTitle("Messages");
 
   if (listError) {
     return (

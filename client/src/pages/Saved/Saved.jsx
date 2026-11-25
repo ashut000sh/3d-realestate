@@ -9,6 +9,7 @@ import ListingCard, { ListingCardSkeleton } from "../../components/ListingCard.j
 import { ROUTES } from "../../constants/routes.js";
 import { useSaved } from "../../hooks/useSaved.js";
 import { getSaved } from "../../services/saved.service.js";
+import { usePageTitle } from "../../hooks/usePageTitle.js";
 
 export default function Saved() {
   const { ids } = useSaved();
@@ -26,6 +27,8 @@ export default function Saved() {
 
   // Un-hearting a card here removes it straight away
   const items = result.items?.filter((listing) => ids.has(listing.id)) ?? null;
+
+  usePageTitle("Saved homes");
 
   return (
     <main className="page space-y-8">

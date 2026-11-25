@@ -4,6 +4,7 @@
 import { useEffect, useState } from "react";
 import Icon from "../../components/Icon.jsx";
 import { mediaUrl } from "../../utils/mediaUrl.js";
+import Photo from "../../components/Photo.jsx";
 
 function Lightbox({ images, title, start, onClose }) {
   const [index, setIndex] = useState(start);
@@ -47,7 +48,7 @@ function Lightbox({ images, title, start, onClose }) {
         </button>
       </div>
       <div className="relative flex flex-1 items-center justify-center px-4">
-        <img
+        <Photo
           key={index}
           src={mediaUrl(images[index])}
           alt={`${title}, photo ${index + 1} of ${images.length}`}
@@ -82,7 +83,7 @@ function Lightbox({ images, title, start, onClose }) {
               i === index ? "ring-accent" : "opacity-50 ring-transparent hover:opacity-100"
             }`}
           >
-            <img src={mediaUrl(url)} alt="" className="h-full w-full object-cover" />
+            <Photo src={mediaUrl(url)} alt="" className="h-full w-full object-cover" />
           </button>
         ))}
       </div>
@@ -111,7 +112,7 @@ export default function Gallery({ images, title, badge }) {
       {/* Phones and tablets: one photo with arrows */}
       <div className="relative aspect-[4/3] overflow-hidden rounded-[24px] bg-sand md:hidden">
         <button className="h-full w-full" onClick={() => setOpen(index)} aria-label="Open photos">
-          <img
+          <Photo
             src={mediaUrl(images[index])}
             alt={`${title}, photo ${index + 1} of ${images.length}`}
             className="h-full w-full object-cover"
@@ -153,7 +154,7 @@ export default function Gallery({ images, title, badge }) {
           style={images.length === 1 ? { borderRadius: 28 } : undefined}
           aria-label="Open photo 1"
         >
-          <img
+          <Photo
             src={mediaUrl(images[0])}
             alt={title}
             className="absolute inset-0 h-full w-full object-cover transition duration-700 group-hover:scale-[1.03]"
@@ -168,7 +169,7 @@ export default function Gallery({ images, title, badge }) {
                 className={`group relative min-h-0 overflow-hidden bg-sand ${i === 0 ? "rounded-tr-[28px]" : "rounded-br-[28px]"} ${images.length === 2 ? "row-span-2 rounded-r-[28px]" : ""}`}
                 aria-label={`Open photo ${i + 2}`}
               >
-                <img
+                <Photo
                   src={mediaUrl(url)}
                   alt=""
                   className="absolute inset-0 h-full w-full object-cover transition duration-700 group-hover:scale-[1.03]"

@@ -9,6 +9,7 @@ import Button from "../../components/Button.jsx";
 import Icon from "../../components/Icon.jsx";
 import Logo from "../../components/Logo.jsx";
 import { ROUTES } from "../../constants/routes.js";
+import { usePageTitle } from "../../hooks/usePageTitle.js";
 
 // Remember that onboarding was shown, so Splash skips it next time
 const SEEN_KEY = "aawas:onboarded";
@@ -127,6 +128,8 @@ export default function Onboarding() {
     markSeen();
     navigate(to);
   }
+
+  usePageTitle("Welcome");
 
   return (
     <main className="flex min-h-screen flex-col bg-background">

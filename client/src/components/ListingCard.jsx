@@ -8,6 +8,7 @@ import { mediaUrl } from "../utils/mediaUrl.js";
 import Icon from "./Icon.jsx";
 import SaveButton from "./SaveButton.jsx";
 import { Skeleton } from "./Loader.jsx";
+import Photo from "./Photo.jsx";
 
 export default function ListingCard({ listing, compact = false }) {
   const cover = mediaUrl(listing.coverImageUrl);
@@ -21,7 +22,7 @@ export default function ListingCard({ listing, compact = false }) {
         className={`relative overflow-hidden bg-sand ${compact ? "aspect-[16/10]" : "aspect-[4/3]"}`}
       >
         {cover ? (
-          <img
+          <Photo
             src={cover}
             alt={listing.title}
             loading="lazy"

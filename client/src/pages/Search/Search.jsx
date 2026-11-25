@@ -16,6 +16,7 @@ import Icon from "../../components/Icon.jsx";
 import { searchListings } from "../../services/listings.service.js";
 import FilterPanel from "./FilterPanel.jsx";
 import ResultsMap from "./ResultsMap.jsx";
+import { usePageTitle } from "../../hooks/usePageTitle.js";
 
 const FILTER_KEYS = ["q", "type", "district", "minPrice", "maxPrice"];
 
@@ -73,6 +74,8 @@ export default function Search() {
   }
 
   const totalPages = Math.max(1, Math.ceil(result.total / LIMITS.PAGE_SIZE));
+
+  usePageTitle("Explore homes");
 
   return (
     <main className="page">

@@ -14,6 +14,7 @@ import Icon from "../../components/Icon.jsx";
 import SaveButton from "../../components/SaveButton.jsx";
 import { Skeleton } from "../../components/Loader.jsx";
 import { ROUTES, buildRoute } from "../../constants/routes.js";
+import { useAuth } from "../../hooks/useAuth.jsx";
 import { tokenStore } from "../../services/api.js";
 import { startConversation } from "../../services/chat.service.js";
 import { getListing } from "../../services/listings.service.js";
@@ -21,8 +22,10 @@ import { LISTING_TYPE_LABEL, formatPrice } from "../../utils/formatPrice.js";
 import { addToCompare, getCompareIds, onCompareChange } from "../Compare/compareStore.js";
 import Gallery from "./Gallery.jsx";
 import ListingMap from "./ListingMap.jsx";
+import { usePageTitle } from "../../hooks/usePageTitle.js";
 
 export default function Listing() {
+  const { user } = useAuth();
   const { id } = useParams();
   const navigate = useNavigate();
   // loadedId = which listing the data/error belong to. While it differs from the URL's id
@@ -82,6 +85,8 @@ export default function Listing() {
     setNotice(result.ok ? "" : result.error);
   }
 
+  usePageTitle(listing?.title ?? "Home details");
+
   if (loading) {
     return (
       <main className="page space-y-6">
@@ -115,6 +120,8 @@ export default function Listing() {
   }
 
   const isStay = listing.type === LISTING_TYPE.SHORT_STAY;
+  // The seller looking at their own listing manages it instead of booking or chatting
+  const isOwner = Boolean(user && listing.seller && user.id === listing.seller.id);
   const hasLocation = typeof listing.lat === "number" && typeof listing.lng === "number";
   const facts = [
     listing.bedrooms !== null && { icon: "bed", label: "Bedrooms", value: listing.bedrooms },
@@ -256,27 +263,40 @@ export default function Listing() {
                   <Icon name="clock" className="h-5 w-5" /> Tour coming soon
                 </Button>
               )}
-              <Button
-                to={buildRoute(ROUTES.BOOKING, { id: listing.id })}
-                variant="gold"
-                size="lg"
-                className="w-full"
-              >
-                <Icon name="calendar" className="h-5 w-5" />{" "}
-                {isStay ? "Book a stay" : "Book a viewing"}
-              </Button>
-              <Button
-                variant="secondary"
-                size="lg"
-                className="w-full"
-                onClick={handleChat}
-                loading={chatBusy}
-              >
-                <Icon name="chat" className="h-5 w-5" />{" "}
-                {chatBusy ? "Opening chat..." : "Chat with seller"}
-              </Button>
-              {listing.status === LISTING_STATUS.LIVE && (
-                <SaveButton listingId={listing.id} variant="labelled" className="w-full" />
+              {isOwner ? (
+                <>
+                  <Button to={ROUTES.MY_LISTINGS} variant="gold" size="lg" className="w-full">
+                    <Icon name="key" className="h-5 w-5" /> Manage in My listings
+                  </Button>
+                  <p className="text-center text-sm text-muted">
+                    This is your listing. Buyers see "Book" and "Chat" here.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <Button
+                    to={buildRoute(ROUTES.BOOKING, { id: listing.id })}
+                    variant="gold"
+                    size="lg"
+                    className="w-full"
+                  >
+                    <Icon name="calendar" className="h-5 w-5" />{" "}
+                    {isStay ? "Book a stay" : "Book a viewing"}
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    size="lg"
+                    className="w-full"
+                    onClick={handleChat}
+                    loading={chatBusy}
+                  >
+                    <Icon name="chat" className="h-5 w-5" />{" "}
+                    {chatBusy ? "Opening chat..." : "Chat with seller"}
+                  </Button>
+                  {listing.status === LISTING_STATUS.LIVE && (
+                    <SaveButton listingId={listing.id} variant="labelled" className="w-full" />
+                  )}
+                </>
               )}
             </div>
 

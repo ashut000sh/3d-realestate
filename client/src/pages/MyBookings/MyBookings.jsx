@@ -14,6 +14,8 @@ import { ROUTES, buildRoute } from "../../constants/routes.js";
 import { getMyBookings, updateBookingStatus } from "../../services/bookings.service.js";
 import { LISTING_TYPE_LABEL } from "../../utils/formatPrice.js";
 import { mediaUrl } from "../../utils/mediaUrl.js";
+import Photo from "../../components/Photo.jsx";
+import { usePageTitle } from "../../hooks/usePageTitle.js";
 
 const STATUS_META = {
   [BOOKING_STATUS.REQUESTED]: { label: "Waiting for the seller", tone: "warning" },
@@ -65,7 +67,7 @@ function BookingRow({ booking, onCancel, busy }) {
         className="aspect-[4/3] w-full shrink-0 overflow-hidden rounded-xl bg-sand sm:w-36"
       >
         {cover ? (
-          <img src={cover} alt="" loading="lazy" className="h-full w-full object-cover" />
+          <Photo src={cover} alt="" loading="lazy" className="h-full w-full object-cover" />
         ) : (
           <span className="flex h-full items-center justify-center text-muted">
             <Icon name="image" className="h-6 w-6" />
@@ -162,6 +164,8 @@ export default function MyBookings() {
     { key: "upcoming", label: "Upcoming", count: upcoming.length },
     { key: "past", label: "Past & cancelled", count: past.length },
   ];
+
+  usePageTitle("My bookings");
 
   return (
     <main className="page max-w-4xl space-y-8">

@@ -13,6 +13,7 @@ import { ROUTES } from "../../constants/routes.js";
 import AuthLayout from "../../layouts/AuthLayout.jsx";
 import { signup } from "../../services/auth.service.js";
 import { savePendingVerification } from "../Otp/pendingVerification.js";
+import { usePageTitle } from "../../hooks/usePageTitle.js";
 
 const ROLE_OPTIONS = [
   {
@@ -96,6 +97,8 @@ export default function Signup() {
       setSubmitting(false);
     }
   }
+
+  usePageTitle("Sign up");
 
   return (
     <AuthLayout
