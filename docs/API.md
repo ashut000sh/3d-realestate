@@ -148,6 +148,16 @@ Message = {
 
 ---
 
+
+### SAVED (logged in)
+
+| Constant | Method + URL | Who | Send | Get back |
+|---|---|---|---|---|
+| `API.SAVED.LIST` | `GET /api/saved` | logged in | `-` | `200 { items: ListingSummary[] }` newest saved first, live listings only |
+| `API.SAVED.IDS` | `GET /api/saved/ids` | logged in | `-` | `200 { ids: number[] }` (to fill the hearts) |
+| `API.SAVED.ADD` | `POST /api/saved` | logged in | `{ listingId }` | `201 { listingId }` · live listings only (else `404`) · saving twice is fine |
+| `API.SAVED.REMOVE` | `DELETE /api/saved/:listingId` | logged in | `-` | `200 { listingId }` |
+
 ## Live chat (Socket.IO)
 
 Connect to the same server URL. Event names are in `shared/socket-events.js`.

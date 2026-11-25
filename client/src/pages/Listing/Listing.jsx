@@ -5,12 +5,13 @@
 // Job:       Photos, price, details, 'Open 3D tour', 'Book viewing', 'Chat with seller'.
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { LISTING_TYPE } from "@realestate/shared";
+import { LISTING_STATUS, LISTING_TYPE } from "@realestate/shared";
 import Avatar from "../../components/Avatar.jsx";
 import Badge from "../../components/Badge.jsx";
 import Button from "../../components/Button.jsx";
 import EmptyState from "../../components/EmptyState.jsx";
 import Icon from "../../components/Icon.jsx";
+import SaveButton from "../../components/SaveButton.jsx";
 import { Skeleton } from "../../components/Loader.jsx";
 import { ROUTES, buildRoute } from "../../constants/routes.js";
 import { tokenStore } from "../../services/api.js";
@@ -274,6 +275,9 @@ export default function Listing() {
                 <Icon name="chat" className="h-5 w-5" />{" "}
                 {chatBusy ? "Opening chat..." : "Chat with seller"}
               </Button>
+              {listing.status === LISTING_STATUS.LIVE && (
+                <SaveButton listingId={listing.id} variant="labelled" className="w-full" />
+              )}
             </div>
 
             {inCompare ? (

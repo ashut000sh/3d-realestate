@@ -13,6 +13,7 @@ export const ROUTES = {
   COMPARE: "/compare",
   BOOKING: "/listings/:id/book",
   CHAT: "/chat",
+  SAVED: "/saved",
   SCAN_REQUEST: "/sell/scan-request",
   ADMIN: "/admin",
   NOT_FOUND: "*",

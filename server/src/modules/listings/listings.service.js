@@ -9,7 +9,8 @@ const toNumber = (value) => (value === null || value === undefined ? null : Numb
 
 // Columns shared by ListingSummary and Listing. "l" is the listings table.
 // The cover image is the photo with the lowest position (0 = cover).
-const SUMMARY_COLUMNS = `
+// Exported for other modules that show listing cards (e.g. saved homes)
+export const SUMMARY_COLUMNS = `
   l.id, l.title, l.type, l.price, l.district, l.lat, l.lng,
   (l.tour_url IS NOT NULL) AS has_tour,
   (SELECT url FROM listing_images li
@@ -27,7 +28,7 @@ const DETAIL_COLUMNS = `${SUMMARY_COLUMNS},
   ) AS images`;
 
 // Database row -> ListingSummary (docs/API.md)
-function toSummary(row) {
+export function toSummary(row) {
   return {
     id: row.id,
     title: row.title,

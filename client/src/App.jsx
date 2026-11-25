@@ -23,6 +23,7 @@ const Tour = lazy(() => import("./pages/Tour/Tour.jsx"));
 const Compare = lazy(() => import("./pages/Compare/Compare.jsx"));
 const Booking = lazy(() => import("./pages/Booking/Booking.jsx"));
 const Chat = lazy(() => import("./pages/Chat/Chat.jsx"));
+const Saved = lazy(() => import("./pages/Saved/Saved.jsx"));
 const ScanRequest = lazy(() => import("./pages/ScanRequest/ScanRequest.jsx"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard/AdminDashboard.jsx"));
 
@@ -50,6 +51,14 @@ export default function App() {
             element={
               <RequireAuth>
                 <Chat />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path={ROUTES.SAVED}
+            element={
+              <RequireAuth>
+                <Saved />
               </RequireAuth>
             }
           />

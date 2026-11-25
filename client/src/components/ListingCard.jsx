@@ -6,6 +6,7 @@ import { ROUTES, buildRoute } from "../constants/routes.js";
 import { LISTING_TYPE_LABEL, formatPrice } from "../utils/formatPrice.js";
 import { mediaUrl } from "../utils/mediaUrl.js";
 import Icon from "./Icon.jsx";
+import SaveButton from "./SaveButton.jsx";
 import { Skeleton } from "./Loader.jsx";
 
 export default function ListingCard({ listing, compact = false }) {
@@ -42,6 +43,7 @@ export default function ListingCard({ listing, compact = false }) {
             <Icon name="cube" className="h-3.5 w-3.5 text-accent" /> 3D tour
           </span>
         )}
+        <SaveButton listingId={listing.id} className="absolute right-3 bottom-3" />
         <p className="absolute bottom-3 left-4 text-lg font-semibold text-white drop-shadow">
           {formatPrice(listing.price, listing.type)}
         </p>

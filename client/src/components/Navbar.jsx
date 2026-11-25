@@ -5,6 +5,7 @@ import { Link, NavLink, useNavigate } from "react-router-dom";
 import { ROLES } from "@realestate/shared";
 import { ROUTES } from "../constants/routes.js";
 import { useAuth } from "../hooks/useAuth.jsx";
+import { useSaved } from "../hooks/useSaved.js";
 import { getCompareIds, onCompareChange } from "../pages/Compare/compareStore.js";
 import Avatar from "./Avatar.jsx";
 import Button from "./Button.jsx";
@@ -31,6 +32,7 @@ function useCompareCount() {
 
 function UserMenu({ user, onLogout }) {
   const [open, setOpen] = useState(false);
+  const { count: savedCount } = useSaved();
   const ref = useRef(null);
 
   // Close when clicking anywhere else
@@ -91,6 +93,19 @@ function UserMenu({ user, onLogout }) {
               <Icon name="chart" className="h-4 w-4 text-muted" /> Admin dashboard
             </Link>
           )}
+          <Link
+            role="menuitem"
+            to={ROUTES.SAVED}
+            onClick={() => setOpen(false)}
+            className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm hover:bg-sand"
+          >
+            <Icon name="heart" className="h-4 w-4 text-muted" /> Saved homes
+            {savedCount > 0 && (
+              <span className="ml-auto rounded-full bg-sand px-2 text-xs font-semibold text-muted">
+                {savedCount}
+              </span>
+            )}
+          </Link>
           <Link
             role="menuitem"
             to={ROUTES.CHAT}

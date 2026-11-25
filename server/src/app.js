@@ -9,6 +9,7 @@ import scansRoutes from "./modules/scans/scans.routes.js";
 import bookingsRoutes from "./modules/bookings/bookings.routes.js";
 import chatRoutes from "./modules/chat/chat.routes.js";
 import adminRoutes from "./modules/admin/admin.routes.js";
+import savedRoutes from "./modules/saved/saved.routes.js";
 
 export const app = express();
 
@@ -27,6 +28,7 @@ app.use(scansRoutes);
 app.use(bookingsRoutes);
 app.use(chatRoutes);
 app.use(adminRoutes);
+app.use(savedRoutes);
 
 app.use((req, res) => res.status(404).json({ error: `No route: ${req.method} ${req.path}` }));
 app.use(errorHandler);

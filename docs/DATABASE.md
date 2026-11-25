@@ -17,6 +17,7 @@ by `npm run db:migrate -w server`. Sample data: `npm run db:seed` (empties every
 | `001_init.sql` | All 8 tables and their indexes |
 | `002_message_read_at.sql` | `messages.read_at` (for unread counts) and indexes on `conversations.buyer_id` / `seller_id` |
 | `003_otp_attempts.sql` | `otp_codes.attempts` (wrong OTP guesses; the code is used up after 5) |
+| `004_saved_listings.sql` | `saved_listings`: each user's saved homes (the heart button) |
 
 `schema_migrations` (made by the migration runner) remembers which files already ran.
 
@@ -35,6 +36,8 @@ erDiagram
     users ||--o{ conversations : "buyer / seller"
     conversations ||--o{ messages : "contains"
     users ||--o{ messages : "sends"
+    users ||--o{ saved_listings : "saves"
+    listings ||--o{ saved_listings : "is saved"
 ```
 
 Deleting a listing also deletes its photos, scan requests, bookings and conversations
@@ -125,6 +128,14 @@ Only `live` listings appear in search and compare, and only their seller and adm
 | created_at | TIMESTAMPTZ | |
 
 Two confirmed stays on the same listing can't overlap (checked when booking and when confirming).
+
+### saved_listings
+
+| Column | Type | Notes |
+|---|---|---|
+| user_id | INT → users | part of the primary key |
+| listing_id | INT → listings | part of the primary key, so a home is saved once per user |
+| created_at | TIMESTAMPTZ | "newest saved first" on the Saved page |
 
 ### conversations
 
