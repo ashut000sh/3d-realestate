@@ -13,6 +13,9 @@ import { formatPrice } from "../../utils/formatPrice.js";
 
 // Vite renames image files, so tell Leaflet where its default marker pictures are.
 // Without this the markers show as broken images.
+// Leaflet guesses its image folder from the CSS and puts it in front of these URLs,
+// which breaks Vite's file names (the marker shows as a broken image). Turn that off.
+delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconUrl: markerIcon,
   iconRetinaUrl: markerIcon2x,
