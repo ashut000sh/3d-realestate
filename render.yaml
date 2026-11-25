@@ -1,0 +1,30 @@
+# Render Blueprint: one free web service runs the API and serves the built website,
+# so the whole app is one address. The database is on Neon (DATABASE_URL, set in Render).
+# Load demo data into a new database once from a laptop:
+#   DATABASE_URL=<neon url> npm run demo:reset
+services:
+  - type: web
+    name: aawas
+    runtime: node
+    plan: free
+    region: singapore
+    buildCommand: >-
+      npm ci --include=dev &&
+      npm run tours &&
+      VITE_API_URL=${VITE_API_URL:-$RENDER_EXTERNAL_URL} npm run build
+    startCommand: >-
+      npm run db:migrate -w server &&
+      node server/db/restore-photos.js &&
+      npm start -w server
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: NODE_ENV
+        value: production
+      - key: SERVE_CLIENT
+        value: "true"
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true

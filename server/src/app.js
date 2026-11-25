@@ -30,5 +30,15 @@ app.use(chatRoutes);
 app.use(adminRoutes);
 app.use(savedRoutes);
 
+// On a host (SERVE_CLIENT=true) the API also serves the built website from client/dist,
+// so the whole app is one address. Locally the website runs on Vite (port 5173) instead.
+if (env.SERVE_CLIENT) {
+  const dist = path.resolve(import.meta.dirname, "../../client/dist");
+  app.use(express.static(dist));
+  app.get(/^\/(?!api\/|uploads\/|socket\.io\/).*/, (_req, res) =>
+    res.sendFile(path.join(dist, "index.html")),
+  );
+}
+
 app.use((req, res) => res.status(404).json({ error: `No route: ${req.method} ${req.path}` }));
 app.use(errorHandler);
