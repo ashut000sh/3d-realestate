@@ -77,9 +77,11 @@ export default function MyProperties({ refreshKey }) {
     }
   }
 
-  // Booking has no listing title, so take it from my scan requests when we know it
-  const titleOf = (listingId) =>
-    scans.find((s) => s.listingId === listingId)?.listingTitle ?? `Property #${listingId}`;
+  // Bookings come with their listing's title; older API versions didn't, so fall back
+  const titleOf = (booking) =>
+    booking.listing?.title ??
+    scans.find((s) => s.listingId === booking.listingId)?.listingTitle ??
+    `Property #${booking.listingId}`;
 
   if (loading) {
     return (
@@ -156,12 +158,13 @@ export default function MyProperties({ refreshKey }) {
                         to={buildRoute(ROUTES.LISTING, { id: booking.listingId })}
                         className="block truncate font-medium text-ink hover:text-primary"
                       >
-                        {titleOf(booking.listingId)}
+                        {titleOf(booking)}
                       </Link>
                       <p className="mt-0.5 text-sm text-muted">
                         {booking.kind === BOOKING_KIND.STAY
                           ? `Stay · ${booking.date} → ${booking.checkOut}`
                           : `Viewing · ${booking.date}`}
+                        {booking.userFullName && ` · ${booking.userFullName}`}
                       </p>
                     </div>
                     <StatusBadge badge={BOOKING_BADGE[booking.status]} fallback={booking.status} />

@@ -5,12 +5,23 @@ import { query } from "../../config/db.js";
 import { httpError } from "../../middleware/errorHandler.js";
 
 // Columns for a Booking (docs/API.md). DATE columns go out as "YYYY-MM-DD" text,
-// so time zones can never shift them by a day.
+// so time zones can never shift them by a day. Always used with BOOKING_FROM, which adds
+// the listing (title, photo, type) and the person who booked, so screens never show bare ids.
 const BOOKING_COLUMNS = `
   b.id, b.listing_id, b.user_id, b.kind,
   to_char(b.date, 'YYYY-MM-DD') AS date,
   to_char(b.check_out, 'YYYY-MM-DD') AS check_out,
-  b.message, b.status, b.created_at`;
+  b.message, b.status, b.created_at,
+  l.title AS listing_title, l.type AS listing_type, l.district AS listing_district,
+  l.price AS listing_price,
+  (SELECT url FROM listing_images li WHERE li.listing_id = l.id
+    ORDER BY li.position, li.id LIMIT 1) AS listing_cover_url,
+  u.full_name AS user_full_name`;
+
+const BOOKING_FROM = `
+  bookings b
+  JOIN listings l ON l.id = b.listing_id
+  JOIN users u ON u.id = b.user_id`;
 
 function toBooking(row) {
   return {
@@ -23,11 +34,20 @@ function toBooking(row) {
     message: row.message,
     status: row.status,
     createdAt: row.created_at,
+    listing: {
+      id: row.listing_id,
+      title: row.listing_title,
+      type: row.listing_type,
+      district: row.listing_district,
+      price: row.listing_price === null ? null : Number(row.listing_price),
+      coverImageUrl: row.listing_cover_url ?? null,
+    },
+    userFullName: row.user_full_name,
   };
 }
 
 async function getBooking(id) {
-  const { rows } = await query(`SELECT ${BOOKING_COLUMNS} FROM bookings b WHERE b.id = $1`, [id]);
+  const { rows } = await query(`SELECT ${BOOKING_COLUMNS} FROM ${BOOKING_FROM} WHERE b.id = $1`, [id]);
   if (rows.length === 0) throw httpError(404, "Booking not found");
   return toBooking(rows[0]);
 }
@@ -84,10 +104,10 @@ export async function createBooking(userId, { listingId, kind, date, checkOut, m
 export async function listMyBookings(userId, asSeller) {
   const { rows } = await query(
     asSeller
-      ? `SELECT ${BOOKING_COLUMNS} FROM bookings b JOIN listings l ON l.id = b.listing_id
+      ? `SELECT ${BOOKING_COLUMNS} FROM ${BOOKING_FROM}
           WHERE l.seller_id = $1 ORDER BY b.created_at DESC, b.id DESC`
-      : `SELECT ${BOOKING_COLUMNS} FROM bookings b
-          WHERE b.user_id = $1 ORDER BY b.created_at DESC, b.id DESC`,
+      : `SELECT ${BOOKING_COLUMNS} FROM ${BOOKING_FROM}
+          WHERE b.user_id = $1 ORDER BY b.date DESC, b.id DESC`,
     [userId],
   );
   return { items: rows.map(toBooking) };

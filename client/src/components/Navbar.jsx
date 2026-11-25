@@ -95,6 +95,14 @@ function UserMenu({ user, onLogout }) {
           )}
           <Link
             role="menuitem"
+            to={ROUTES.MY_BOOKINGS}
+            onClick={() => setOpen(false)}
+            className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm hover:bg-sand"
+          >
+            <Icon name="calendar" className="h-4 w-4 text-muted" /> My bookings
+          </Link>
+          <Link
+            role="menuitem"
             to={ROUTES.SAVED}
             onClick={() => setOpen(false)}
             className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm hover:bg-sand"

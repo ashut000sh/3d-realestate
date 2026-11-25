@@ -14,6 +14,7 @@ export const ROUTES = {
   BOOKING: "/listings/:id/book",
   CHAT: "/chat",
   SAVED: "/saved",
+  MY_BOOKINGS: "/bookings",
   SCAN_REQUEST: "/sell/scan-request",
   ADMIN: "/admin",
   NOT_FOUND: "*",

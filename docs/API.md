@@ -71,6 +71,8 @@ Booking = {
   message: "Can I come after 4pm?",
   status: "requested",          // BOOKING_STATUS
   createdAt: "..."
+  listing: { id, title, type, district, price, coverImageUrl },  // so screens never show bare ids
+  userFullName,  // who booked (for the seller)
 }
 
 Conversation = {
@@ -149,7 +151,7 @@ Message = {
 ---
 
 
-### SAVED (logged in)
+## SAVED  ·  `server/src/modules/saved/`
 
 | Constant | Method + URL | Who | Send | Get back |
 |---|---|---|---|---|
