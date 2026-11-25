@@ -76,6 +76,16 @@ function UserMenu({ user, onLogout }) {
           {user.role === ROLES.SELLER && (
             <Link
               role="menuitem"
+              to={ROUTES.MY_LISTINGS}
+              onClick={() => setOpen(false)}
+              className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm hover:bg-sand"
+            >
+              <Icon name="home" className="h-4 w-4 text-muted" /> My listings
+            </Link>
+          )}
+          {user.role === ROLES.SELLER && (
+            <Link
+              role="menuitem"
               to={ROUTES.SCAN_REQUEST}
               onClick={() => setOpen(false)}
               className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm hover:bg-sand"

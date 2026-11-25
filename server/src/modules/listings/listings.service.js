@@ -97,6 +97,35 @@ export async function listListings({ q, type, district, minPrice, maxPrice, page
   return { items: rows.map(toSummary), page, total: countResult.rows[0].total };
 }
 
+// The seller's own listings in every status, newest first, with what the
+// "My listings" page needs: photo count, the latest scan request and open bookings.
+export async function listMyListings(sellerId) {
+  const { rows } = await query(
+    `SELECT ${SUMMARY_COLUMNS}, l.status, l.created_at,
+            (SELECT count(*)::int FROM listing_images li WHERE li.listing_id = l.id) AS images_count,
+            (SELECT s.status FROM scan_requests s WHERE s.listing_id = l.id
+              ORDER BY s.created_at DESC, s.id DESC LIMIT 1) AS scan_status,
+            (SELECT count(*)::int FROM bookings b
+              WHERE b.listing_id = l.id AND b.status = 'requested') AS pending_bookings,
+            (SELECT count(*)::int FROM saved_listings sv WHERE sv.listing_id = l.id) AS saves
+       FROM listings l
+      WHERE l.seller_id = $1
+      ORDER BY l.created_at DESC, l.id DESC`,
+    [sellerId],
+  );
+  return {
+    items: rows.map((row) => ({
+      ...toSummary(row),
+      status: row.status,
+      createdAt: row.created_at,
+      imagesCount: row.images_count,
+      scanStatus: row.scan_status,
+      pendingBookings: row.pending_bookings,
+      saves: row.saves,
+    })),
+  };
+}
+
 // One full listing, or null if it doesn't exist
 async function findListing(id) {
   const { rows } = await query(

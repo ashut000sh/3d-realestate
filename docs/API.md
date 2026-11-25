@@ -110,6 +110,7 @@ Message = {
 |---|---|---|---|---|
 | `API.LISTINGS.LIST` | `GET /api/listings` | public | `query: ?q, type, minPrice, maxPrice, district, page` | `200 { items: ListingSummary[], page, total }` |
 | `API.LISTINGS.COMPARE` | `GET /api/listings/compare` | public | `query: ?ids=1,2,3 (max 3)` | `200 { items: Listing[] }` |
+| `API.LISTINGS.MINE` | `GET /api/listings/mine` | seller | `-` | `200 { items: MyListing[] }` every status, newest first. `MyListing` = `ListingSummary` + `status`, `createdAt`, `imagesCount`, `scanStatus` (latest request or `null`), `pendingBookings`, `saves` |
 | `API.LISTINGS.ONE` | `GET /api/listings/:id` | public | `-` | `200 { listing: Listing }` · listings that aren't `live` answer `404` except to their seller and admins (send the token if you have one) |
 | `API.LISTINGS.CREATE` | `POST /api/listings` | seller | `{ title, description, type, price, district, address, lat, lng, bedrooms, bathrooms, areaSqft }` | `201 { listing: Listing }` |
 | `API.LISTINGS.UPLOAD_IMAGES` | `POST /api/listings/:id/images` | owner seller | `multipart/form-data: images (1 to 10 .jpg/.png, max 5 MB each)` | `200 { images: string[] }` |

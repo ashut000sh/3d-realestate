@@ -13,6 +13,7 @@ export const API = {
   LISTINGS: {
     LIST: "/api/listings",
     COMPARE: "/api/listings/compare",
+    MINE: "/api/listings/mine",
     ONE: "/api/listings/:id",
     CREATE: "/api/listings",
     UPDATE: "/api/listings/:id",

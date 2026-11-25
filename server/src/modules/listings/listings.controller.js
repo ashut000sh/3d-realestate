@@ -53,6 +53,13 @@ export async function compare(req, res) {
   res.json(await listingsService.compareListings(ids));
 }
 
+// GET /api/listings/mine   (seller)
+// in:  -
+// out: 200 { items: MyListing[] }   every status, newest first (MyListing: docs/API.md)
+export async function mine(req, res) {
+  res.json(await listingsService.listMyListings(req.user.id));
+}
+
 // GET /api/listings/:id   (public)
 // in:  -
 // out: 200 { listing: Listing }

@@ -17,3 +17,6 @@ export const uploadListingImages = (id, files) => {
     (d) => d.images,
   );
 };
+export const getMyListings = () => request("GET", API.LISTINGS.MINE).then((d) => d.items);
+export const updateListing = (id, fields) =>
+  request("PATCH", buildPath(API.LISTINGS.UPDATE, { id }), { body: fields }).then((d) => d.listing);
