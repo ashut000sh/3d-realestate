@@ -31,9 +31,9 @@ export const PHOTO_CREDITS = [
   {
     listing: "2BHK flat in Baluwatar",
     file: "2bhk-flat-in-baluwatar/1.jpg",
-    photographer: "mingche lee",
+    photographer: "Sharath G.",
     site: "Pexels",
-    page: "https://www.pexels.com/photo/modern-apartment-building-with-balconies-39485848/",
+    page: "https://www.pexels.com/photo/an-apartment-building-with-balconies-7672058/",
     licence: "Pexels License",
   },
   {
@@ -79,9 +79,9 @@ export const PHOTO_CREDITS = [
   {
     listing: "Bungalow in Bhaisepati",
     file: "bungalow-in-bhaisepati/1.jpg",
-    photographer: "aksinfo7 universe",
+    photographer: "edithub pro",
     site: "Pexels",
-    page: "https://www.pexels.com/photo/charming-red-brick-bungalows-in-serene-garden-setting-29777213/",
+    page: "https://www.pexels.com/photo/modern-house-building-18273285/",
     licence: "Pexels License",
   },
   {
@@ -135,17 +135,17 @@ export const PHOTO_CREDITS = [
   {
     listing: "Newari house in Patan",
     file: "newari-house-in-patan/2.jpg",
-    photographer: "Meri Verbina",
+    photographer: "Yunuen Zempoaltecatl",
     site: "Pexels",
-    page: "https://www.pexels.com/photo/furniture-in-a-traditional-living-room-17404700/",
+    page: "https://www.pexels.com/photo/cozy-rustic-kitchen-with-brick-walls-and-bar-stools-35657821/",
     licence: "Pexels License",
   },
   {
     listing: "Newari house in Patan",
     file: "newari-house-in-patan/3.jpg",
-    photographer: "Max Vakhtbovych",
+    photographer: "Andrea Musto",
     site: "Pexels",
-    page: "https://www.pexels.com/photo/home-bedroom-luxury-interior-design-8135289/",
+    page: "https://www.pexels.com/photo/a-bedroom-with-a-bed-and-a-fireplace-27945037/",
     licence: "Pexels License",
   },
   {
@@ -207,9 +207,9 @@ export const PHOTO_CREDITS = [
   {
     listing: "Land with small house in Thimi",
     file: "land-with-small-house-in-thimi/2.jpg",
-    photographer: "Михаил Крамор",
+    photographer: "Lisa Anna",
     site: "Pexels",
-    page: "https://www.pexels.com/photo/a-room-with-a-wooden-floor-and-windows-27409033/",
+    page: "https://www.pexels.com/photo/room-in-a-house-19866481/",
     licence: "Pexels License",
   },
   {
@@ -343,9 +343,9 @@ export const PHOTO_CREDITS = [
   {
     listing: "Farm house in Bharatpur",
     file: "farm-house-in-bharatpur/1.jpg",
-    photographer: "Quang Nguyen Vinh",
+    photographer: "Gizem Gökce",
     site: "Pexels",
-    page: "https://www.pexels.com/photo/facade-of-a-house-with-cracked-walls-14776465/",
+    page: "https://www.pexels.com/photo/charming-rural-house-with-red-roof-38095199/",
     licence: "Pexels License",
   },
   {

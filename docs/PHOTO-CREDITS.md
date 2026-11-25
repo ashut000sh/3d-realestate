@@ -8,7 +8,7 @@ The 45 sample listing photos used by the seed data (`npm run db:seed`) are from
 with no attribution required. We credit every photographer anyway.
 
 The files are stored in `server/db/seed-assets/listings/`. Photo 1 of each listing is its cover.
-29 photographers in total.
+31 photographers in total.
 
 ## 3BHK house in Budhanilkantha
 
@@ -22,7 +22,7 @@ The files are stored in `server/db/seed-assets/listings/`. Photo 1 of each listi
 
 | Photo | Photographer | Source | Licence |
 |---|---|---|---|
-| `1.jpg` | mingche lee | [Pexels](https://www.pexels.com/photo/modern-apartment-building-with-balconies-39485848/) | Pexels License |
+| `1.jpg` | Sharath G. | [Pexels](https://www.pexels.com/photo/an-apartment-building-with-balconies-7672058/) | Pexels License |
 | `2.jpg` | Pixabay | [Pexels](https://www.pexels.com/photo/empty-fabric-sofa-inside-room-280239/) | Pexels License |
 | `3.jpg` | Max Vakhtbovych | [Pexels](https://www.pexels.com/photo/apartment-interior-with-bed-near-table-with-chair-6782479/) | Pexels License |
 
@@ -38,7 +38,7 @@ The files are stored in `server/db/seed-assets/listings/`. Photo 1 of each listi
 
 | Photo | Photographer | Source | Licence |
 |---|---|---|---|
-| `1.jpg` | aksinfo7 universe | [Pexels](https://www.pexels.com/photo/charming-red-brick-bungalows-in-serene-garden-setting-29777213/) | Pexels License |
+| `1.jpg` | edithub pro | [Pexels](https://www.pexels.com/photo/modern-house-building-18273285/) | Pexels License |
 | `2.jpg` | Max Vakhtbovych | [Pexels](https://www.pexels.com/photo/interior-design-of-room-7546648/) | Pexels License |
 | `3.jpg` | Max Vakhtbovych | [Pexels](https://www.pexels.com/photo/stylish-kitchen-with-wooden-table-7195739/) | Pexels License |
 
@@ -55,8 +55,8 @@ The files are stored in `server/db/seed-assets/listings/`. Photo 1 of each listi
 | Photo | Photographer | Source | Licence |
 |---|---|---|---|
 | `1.jpg` | Pawan Bhandari | [Pexels](https://www.pexels.com/photo/traditional-nepalese-architecture-at-sunset-40409758/) | Pexels License |
-| `2.jpg` | Meri Verbina | [Pexels](https://www.pexels.com/photo/furniture-in-a-traditional-living-room-17404700/) | Pexels License |
-| `3.jpg` | Max Vakhtbovych | [Pexels](https://www.pexels.com/photo/home-bedroom-luxury-interior-design-8135289/) | Pexels License |
+| `2.jpg` | Yunuen Zempoaltecatl | [Pexels](https://www.pexels.com/photo/cozy-rustic-kitchen-with-brick-walls-and-bar-stools-35657821/) | Pexels License |
+| `3.jpg` | Andrea Musto | [Pexels](https://www.pexels.com/photo/a-bedroom-with-a-bed-and-a-fireplace-27945037/) | Pexels License |
 
 ## Heritage homestay near Durbar Square
 
@@ -79,7 +79,7 @@ The files are stored in `server/db/seed-assets/listings/`. Photo 1 of each listi
 | Photo | Photographer | Source | Licence |
 |---|---|---|---|
 | `1.jpg` | Pawan Bhandari | [Pexels](https://www.pexels.com/photo/scenic-view-of-rice-fields-in-bhaktapur-nepal-37878621/) | Pexels License |
-| `2.jpg` | Михаил Крамор | [Pexels](https://www.pexels.com/photo/a-room-with-a-wooden-floor-and-windows-27409033/) | Pexels License |
+| `2.jpg` | Lisa Anna | [Pexels](https://www.pexels.com/photo/room-in-a-house-19866481/) | Pexels License |
 | `3.jpg` | Diego Gonzalez | [Pexels](https://www.pexels.com/photo/vintage-stove-in-kitchen-14596477/) | Pexels License |
 
 ## Apartment in Sanepa Heights
@@ -126,6 +126,6 @@ The files are stored in `server/db/seed-assets/listings/`. Photo 1 of each listi
 
 | Photo | Photographer | Source | Licence |
 |---|---|---|---|
-| `1.jpg` | Quang Nguyen Vinh | [Pexels](https://www.pexels.com/photo/facade-of-a-house-with-cracked-walls-14776465/) | Pexels License |
+| `1.jpg` | Gizem Gökce | [Pexels](https://www.pexels.com/photo/charming-rural-house-with-red-roof-38095199/) | Pexels License |
 | `2.jpg` | Nguyễn Thị Minh Nghi | [Pexels](https://www.pexels.com/photo/checkered-throw-pillows-on-sofa-9877451/) | Pexels License |
 | `3.jpg` | KHOA Nguyenduc | [Pexels](https://www.pexels.com/photo/farms-surrounded-by-fields-in-the-valley-19231302/) | Pexels License |
