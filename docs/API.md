@@ -97,7 +97,7 @@ Message = {
 | Constant | Method & path | Who can call | Request | Response |
 |---|---|---|---|---|
 | `API.AUTH.SIGNUP` | `POST /api/auth/signup` | public | `{ fullName, email, phone, password, role: "buyer" \| "seller" }` | `201 { userId, otpSentTo }` |
-| `API.AUTH.VERIFY_OTP` | `POST /api/auth/verify-otp` | public | `{ userId, otp }` | `200 { token, user: User }` |
+| `API.AUTH.VERIFY_OTP` | `POST /api/auth/verify-otp` | public | `{ userId, otp }` | `200 { token, user: User }` · wrong code `400` (says how many tries are left) · 5 wrong codes use the code up: `429`, ask for a new one |
 | `API.AUTH.RESEND_OTP` | `POST /api/auth/resend-otp` | public | `{ userId }` | `200 { otpSentTo }` |
 | `API.AUTH.LOGIN` | `POST /api/auth/login` | public | `{ email, password }` | `200 { token, user: User }` · `401` wrong email or password · `403 { error, userId }` email not verified |
 | `API.AUTH.ME` | `GET /api/auth/me` | logged in | `-` | `200 { user: User }` |
@@ -108,7 +108,7 @@ Message = {
 |---|---|---|---|---|
 | `API.LISTINGS.LIST` | `GET /api/listings` | public | `query: ?q, type, minPrice, maxPrice, district, page` | `200 { items: ListingSummary[], page, total }` |
 | `API.LISTINGS.COMPARE` | `GET /api/listings/compare` | public | `query: ?ids=1,2,3 (max 3)` | `200 { items: Listing[] }` |
-| `API.LISTINGS.ONE` | `GET /api/listings/:id` | public | `-` | `200 { listing: Listing }` |
+| `API.LISTINGS.ONE` | `GET /api/listings/:id` | public | `-` | `200 { listing: Listing }` · listings that aren't `live` answer `404` except to their seller and admins (send the token if you have one) |
 | `API.LISTINGS.CREATE` | `POST /api/listings` | seller | `{ title, description, type, price, district, address, lat, lng, bedrooms, bathrooms, areaSqft }` | `201 { listing: Listing }` |
 | `API.LISTINGS.UPLOAD_IMAGES` | `POST /api/listings/:id/images` | owner seller | `multipart/form-data: images (1 to 10 .jpg/.png, max 5 MB each)` | `200 { images: string[] }` |
 | `API.LISTINGS.UPDATE` | `PATCH /api/listings/:id` | owner seller | `any CREATE fields` | `200 { listing: Listing }` |
@@ -143,7 +143,7 @@ Message = {
 | Constant | Method & path | Who can call | Request | Response |
 |---|---|---|---|---|
 | `API.ADMIN.STATS` | `GET /api/admin/stats` | admin | `-` | `200 { listings, users, pendingScans, bookingsThisWeek }` |
-| `API.ADMIN.SCAN_QUEUE` | `GET /api/admin/scan-requests` | admin | `query: ?status` | `200 { items: ScanRequest[] }` |
+| `API.ADMIN.SCAN_QUEUE` | `GET /api/admin/scan-requests` | admin | `query: ?status` | `200 { items: ScanRequest[] }` · each item also has `sellerFullName` (for the dashboard's seller column) |
 | `API.ADMIN.USERS` | `GET /api/admin/users` | admin | `query: ?role` | `200 { items: User[] }` |
 
 ---
