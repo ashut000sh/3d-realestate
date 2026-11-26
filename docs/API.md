@@ -22,9 +22,10 @@ User = {
   email: "sita@example.com",
   phone: "98XXXXXXXX",
   role: "buyer",                // ROLES
-  isVerified: true,
+  isVerified: true,             // "Email verified" badge: finished the OTP step
   createdAt: "2026-10-11T05:00:00.000Z"
 }
+// GET /api/admin/users also returns sellerVerifiedAt (date or null) and sellerVerifiedBy (admin's name or null)
 
 ListingSummary = {             // used in lists and search results (smaller, faster)
   id: 12,
@@ -34,6 +35,8 @@ ListingSummary = {             // used in lists and search results (smaller, fas
   district: "Kathmandu",
   coverImageUrl: "https://...",
   hasTour: true,
+  tourVerified: true,           // badge: the listing has a PUBLISHED scan (our team scanned it)
+  sellerVerified: false,        // badge: an admin checked the seller's documents in person
   lat: 27.7654, lng: 85.3651
 }
 
@@ -45,7 +48,7 @@ Listing = {                     // full details on the Listing screen
   status: "live",               // LISTING_STATUS
   tourUrl: "https://.../tour.glb",   // null until a scan is published
   images: ["https://...", "https://..."],
-  seller: { id: 4, fullName: "Ram Thapa" },
+  seller: { id: 4, fullName: "Ram Thapa", verified: false, emailVerified: true },
   createdAt: "...",
 }
 
@@ -78,7 +81,9 @@ Booking = {
 Conversation = {
   id: 2,
   listing: { id: 12, title: "..." },
-  otherUser: { id: 4, fullName: "Ram Thapa" },
+  tourVerified: true,           // badges for the listing in this chat
+  sellerVerified: false,
+  otherUser: { id: 4, fullName: "Ram Thapa", emailVerified: true, sellerVerified: false },  // sellerVerified only true for the verified seller
   lastMessage: { body: "See you then", createdAt: "..." },
   unreadCount: 1
 }
@@ -108,7 +113,7 @@ Message = {
 
 | Constant | Method & path | Who can call | Request | Response |
 |---|---|---|---|---|
-| `API.LISTINGS.LIST` | `GET /api/listings` | public | `query: ?q, type, minPrice, maxPrice, district, page` | `200 { items: ListingSummary[], page, total }` |
+| `API.LISTINGS.LIST` | `GET /api/listings` | public | `query: ?q, type, minPrice, maxPrice, district, verifiedSeller (true = verified sellers only), page` | `200 { items: ListingSummary[], page, total }` |
 | `API.LISTINGS.COMPARE` | `GET /api/listings/compare` | public | `query: ?ids=1,2,3 (max 3)` | `200 { items: Listing[] }` |
 | `API.LISTINGS.MINE` | `GET /api/listings/mine` | seller | `-` | `200 { items: MyListing[] }` every status, newest first. `MyListing` = `ListingSummary` + `status`, `createdAt`, `imagesCount`, `scanStatus` (latest request or `null`), `pendingBookings`, `saves` |
 | `API.LISTINGS.ONE` | `GET /api/listings/:id` | public | `-` | `200 { listing: Listing }` · listings that aren't `live` answer `404` except to their seller and admins (send the token if you have one) |
@@ -147,7 +152,9 @@ Message = {
 |---|---|---|---|---|
 | `API.ADMIN.STATS` | `GET /api/admin/stats` | admin | `-` | `200 { listings, users, pendingScans, bookingsThisWeek }` |
 | `API.ADMIN.SCAN_QUEUE` | `GET /api/admin/scan-requests` | admin | `query: ?status` | `200 { items: ScanRequest[] }` · each item also has `sellerFullName` (for the dashboard's seller column) |
-| `API.ADMIN.USERS` | `GET /api/admin/users` | admin | `query: ?role` | `200 { items: User[] }` |
+| `API.ADMIN.USERS` | `GET /api/admin/users` | admin | `query: ?role` | `200 { items: User[] }` (with `sellerVerifiedAt`, `sellerVerifiedBy`) |
+| `API.ADMIN.VERIFY_SELLER` | `PATCH /api/admin/users/:id/verify-seller` | admin | `-` | `200 { userId, sellerVerified: true, sellerVerifiedAt }` · `400` not a seller · `404` unknown user. Verifying again keeps the first date |
+| `API.ADMIN.UNVERIFY_SELLER` | `PATCH /api/admin/users/:id/unverify-seller` | admin | `-` | `200 { userId, sellerVerified: false, sellerVerifiedAt: null }` · same errors |
 | `API.ADMIN.INSIGHTS` | `GET /api/admin/insights` | admin | `-` | `200 { listingsByDistrict: [{ district, total, live }], listingsByType: [{ type, count, avgPrice }], listingsByStatus: [{ status, count }], weekly: [{ weekStart, signups, bookings, listings }] (last 8 weeks, oldest first), scanFunnel: [{ status, count }], bookingsByStatus: [{ status, count }], topListings: [{ id, title, district, type, saves, bookings, chats }] (top 5 live), totals: { withTour, unverifiedUsers, messagesThisWeek, saves } }` |
 | `API.ADMIN.BOOKINGS` | `GET /api/admin/bookings` | admin | `query: ?status` | `200 { items: Booking[] }` newest first, max 200; each also has `sellerFullName` |
 
@@ -185,3 +192,4 @@ Add a line whenever this contract changes, so the other side knows to update.
 |---|---|---|
 | 2026-10-11 | M1 | First version |
 | 2026-11-22 | M1 | Added `API.LISTINGS.UPLOAD_IMAGES` (listing photos) and `?as=seller` on `API.BOOKINGS.MINE`; documented the login 401/403 errors |
+| 2026-11-26 | M1 | Trust badges: `tourVerified` / `sellerVerified` on listings and conversations, `?verifiedSeller` search filter, `API.ADMIN.VERIFY_SELLER` / `UNVERIFY_SELLER` |

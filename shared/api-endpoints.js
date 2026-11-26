@@ -45,6 +45,8 @@ export const API = {
     STATS: "/api/admin/stats",
     SCAN_QUEUE: "/api/admin/scan-requests",
     USERS: "/api/admin/users",
+    VERIFY_SELLER: "/api/admin/users/:id/verify-seller",
+    UNVERIFY_SELLER: "/api/admin/users/:id/unverify-seller",
     INSIGHTS: "/api/admin/insights",
     BOOKINGS: "/api/admin/bookings",
   },

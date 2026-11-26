@@ -8,7 +8,7 @@ import Icon from "../../components/Icon.jsx";
 import Input, { Select } from "../../components/Input.jsx";
 import { LISTING_TYPE_LABEL } from "../../utils/formatPrice.js";
 
-// filters: { q, type, district, minPrice, maxPrice } as strings ("" = not set)
+// filters: { q, type, district, minPrice, maxPrice, verifiedSeller } as strings ("" = not set)
 // onChange(changes): merge these changes into the filters (and go back to page 1)
 export default function FilterPanel({ filters, onChange, onClear }) {
   const [draft, setDraft] = useState({
@@ -40,6 +40,7 @@ export default function FilterPanel({ filters, onChange, onClear }) {
     filters.district,
     filters.minPrice,
     filters.maxPrice,
+    filters.verifiedSeller,
   ].filter(Boolean).length;
   const typeOptions = [
     ["", "Any"],
@@ -137,6 +138,25 @@ export default function FilterPanel({ filters, onChange, onClear }) {
           />
         </div>
       </div>
+
+      {/* Applies straight away, like the dropdowns */}
+      <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-border p-3 transition hover:border-muted/40">
+        <input
+          type="checkbox"
+          name="verifiedSeller"
+          checked={filters.verifiedSeller === "true"}
+          onChange={(e) => onChange({ verifiedSeller: e.target.checked ? "true" : "" })}
+          className="mt-0.5 h-4 w-4 accent-[var(--color-primary)]"
+        />
+        <span>
+          <span className="flex items-center gap-1.5 text-sm font-semibold text-ink">
+            <Icon name="shieldCheck" className="h-4 w-4 text-success" /> Verified sellers only
+          </span>
+          <span className="mt-0.5 block text-xs text-muted">
+            Sellers whose documents our team checked in person
+          </span>
+        </span>
+      </label>
 
       {error && (
         <p

@@ -23,6 +23,7 @@ import { addToCompare, getCompareIds, onCompareChange } from "../Compare/compare
 import Gallery from "./Gallery.jsx";
 import ListingMap from "./ListingMap.jsx";
 import { usePageTitle } from "../../hooks/usePageTitle.js";
+import TrustBadges, { VerifiedBadge } from "../../components/TrustBadges.jsx";
 
 export default function Listing() {
   const { user } = useAuth();
@@ -175,6 +176,11 @@ export default function Listing() {
               ) : (
                 <Badge>3D tour coming soon</Badge>
               )}
+              <TrustBadges
+                tourVerified={listing.tourVerified}
+                sellerVerified={listing.sellerVerified}
+                size="md"
+              />
             </div>
             <h1 className="display mt-4 text-3xl leading-tight text-ink sm:text-[2.6rem]">
               {listing.title}
@@ -327,17 +333,22 @@ export default function Listing() {
             )}
 
             {listing.seller && (
-              <div className="flex items-center gap-3 border-t border-border pt-5">
+              <div className="flex items-start gap-3 border-t border-border pt-5">
                 <Avatar name={listing.seller.fullName} />
-                <div>
+                <div className="min-w-0">
                   <p className="text-xs text-muted">Listed by</p>
                   <p className="font-semibold text-ink">{listing.seller.fullName}</p>
+                  {(listing.seller.verified || listing.seller.emailVerified) && (
+                    <div className="mt-2 flex flex-wrap gap-1.5">
+                      {listing.seller.verified && (
+                        <VerifiedBadge kind="seller" tipSide="top" tipAlign="end" />
+                      )}
+                      {listing.seller.emailVerified && (
+                        <VerifiedBadge kind="email" tipSide="top" tipAlign="end" />
+                      )}
+                    </div>
+                  )}
                 </div>
-                <Icon
-                  name="shield"
-                  className="ml-auto h-5 w-5 text-success"
-                  aria-label="Verified seller"
-                />
               </div>
             )}
           </div>

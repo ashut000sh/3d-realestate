@@ -24,6 +24,8 @@ const PATHS = {
   user: "M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm-7 9a7 7 0 0 1 14 0",
   logout: "M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 17l5-5-5-5M15 12H4",
   shield: "M12 3 4 6v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V6l-8-3Z",
+  shieldCheck: "M12 3 4 6v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V6l-8-3Zm-3.5 9 2.5 2.5 4.5-5",
+  mailCheck: "M4 6h16v7M4 6v12h9M4 6l8 7 8-7m-5 12 2 2 4-4",
   mail: "M4 6h16v12H4V6Zm0 0 8 7 8-7",
   lock: "M6 11h12v10H6V11Zm2 0V8a4 4 0 0 1 8 0v3",
   phone:

@@ -18,6 +18,7 @@ by `npm run db:migrate -w server`. Sample data: `npm run db:seed` (empties every
 | `002_message_read_at.sql` | `messages.read_at` (for unread counts) and indexes on `conversations.buyer_id` / `seller_id` |
 | `003_otp_attempts.sql` | `otp_codes.attempts` (wrong OTP guesses; the code is used up after 5) |
 | `004_saved_listings.sql` | `saved_listings`: each user's saved homes (the heart button) |
+| `006_seller_verification.sql` | `users.seller_verified_at` and `seller_verified_by` ("Verified seller" badge) |
 
 `schema_migrations` (made by the migration runner) remembers which files already ran.
 
@@ -55,8 +56,12 @@ Deleting a listing also deletes its photos, scan requests, bookings and conversa
 | phone | TEXT | optional |
 | password_hash | TEXT | bcrypt hash; never sent by the API |
 | role | TEXT | `buyer`, `seller` or `admin` (`ROLES`). Admins can't sign up; they are added by hand or by the seed |
-| is_verified | BOOLEAN | `true` after the email OTP is entered |
+| is_verified | BOOLEAN | `true` after the email OTP is entered ("Email verified" badge) |
 | created_at | TIMESTAMPTZ | |
+| seller_verified_at | TIMESTAMPTZ | sellers only: when an admin checked their documents in person ("Verified seller" badge). `NULL` = not verified |
+| seller_verified_by | INT → users | the admin who verified them; `NULL` if not verified (or that admin was deleted) |
+
+"Verified tour" has no column: a listing has it when one of its `scan_requests` is `published`.
 
 ### otp_codes
 
