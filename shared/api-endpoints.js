@@ -18,6 +18,7 @@ export const API = {
     CREATE: "/api/listings",
     UPDATE: "/api/listings/:id",
     UPLOAD_IMAGES: "/api/listings/:id/images",
+    AVAILABILITY: "/api/listings/:id/availability",
   },
   SCANS: {
     CREATE: "/api/scan-requests",

@@ -132,6 +132,14 @@ Message = {
 | `API.BOOKINGS.CREATE` | `POST /api/bookings` | logged in | `{ listingId, kind: "viewing" \| "stay", date, checkOut?, message }` | `201 { booking: Booking }` |
 | `API.BOOKINGS.MINE` | `GET /api/bookings/mine` | logged in | `query: ?as=seller (bookings on my listings instead of bookings I made)` | `200 { items: Booking[] }` |
 | `API.BOOKINGS.UPDATE_STATUS` | `PATCH /api/bookings/:id/status` | listing owner | `{ status }` | `200 { booking: Booking }` |
+| `API.LISTINGS.AVAILABILITY` | `GET /api/listings/:id/availability` | anyone (same visibility as `GET /api/listings/:id`) | `query: ?from=YYYY-MM-DD&to=YYYY-MM-DD` (both optional) | `200 { from, to, blocked: [{ start, end }] }` · `400` not a short stay, bad dates or range too long · `404` listing can't be seen |
+
+**Availability** (short stays only, lives in the bookings module):
+
+- Default range: today to `AVAILABILITY.DEFAULT_MONTHS` (6) months ahead. At most `AVAILABILITY.MAX_MONTHS` (12) months per request. `to` is exclusive.
+- `blocked` comes from stays with status in `AVAILABILITY.BLOCKING_STATUSES` (`requested`, `confirmed`). Nights `start` … `end - 1` are taken. `end` is the check-out day, which is free for a new check-in.
+- Touching or overlapping stays are merged into one range. **Only dates are returned**: no booking ids, guests, statuses or messages.
+- The calendar is a guide. `POST /api/bookings` still decides: it returns `409` for a stay that overlaps a **confirmed** one. Two guests may both *request* the same nights, and the owner confirms one; confirming the second then returns `409`.
 
 ## CHAT  ·  owner M5  ·  `server/src/modules/chat/`
 
@@ -185,3 +193,4 @@ Add a line whenever this contract changes, so the other side knows to update.
 |---|---|---|
 | 2026-10-11 | M1 | First version |
 | 2026-11-22 | M1 | Added `API.LISTINGS.UPLOAD_IMAGES` (listing photos) and `?as=seller` on `API.BOOKINGS.MINE`; documented the login 401/403 errors |
+| 2026-11-26 | M1 | Added `API.LISTINGS.AVAILABILITY` (blocked dates for the short-stay calendar) |

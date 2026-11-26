@@ -129,6 +129,10 @@ Only `live` listings appear in search and compare, and only their seller and adm
 
 Two confirmed stays on the same listing can't overlap (checked when booking and when confirming).
 
+The short-stay calendar (`GET /api/listings/:id/availability`) reads this table: stays that are
+`requested` or `confirmed` block their nights `date` … `check_out - 1`. Only the dates leave the
+server. No new columns or migration.
+
 ### saved_listings
 
 | Column | Type | Notes |

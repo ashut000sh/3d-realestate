@@ -13,3 +13,9 @@ export const updateBookingStatus = (id, status) =>
   request("PATCH", buildPath(API.BOOKINGS.UPDATE_STATUS, { id }), { body: { status } }).then(
     (d) => d.booking,
   );
+
+// Blocked dates of a short stay: { from, to, blocked: [{ start, end }] } (end = check-out day, free)
+export const getAvailability = (listingId, { from, to } = {}) =>
+  request("GET", buildPath(API.LISTINGS.AVAILABILITY, { id: listingId }), {
+    query: { from, to },
+  });
