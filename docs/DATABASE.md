@@ -21,6 +21,9 @@ by `npm run db:migrate -w server`. Sample data: `npm run db:seed` (empties every
 
 `schema_migrations` (made by the migration runner) remembers which files already ran.
 
+Not in the database: **nearby places** (`GET /api/listings/:id/nearby`) come from OpenStreetMap and
+are cached in server memory for 24 hours, keyed by listing id and location. No table, no migration.
+
 ## How the tables connect
 
 ```mermaid
