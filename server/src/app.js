@@ -10,6 +10,7 @@ import bookingsRoutes from "./modules/bookings/bookings.routes.js";
 import chatRoutes from "./modules/chat/chat.routes.js";
 import adminRoutes from "./modules/admin/admin.routes.js";
 import savedRoutes from "./modules/saved/saved.routes.js";
+import shareRoutes from "./modules/share/share.routes.js";
 
 export const app = express();
 
@@ -29,6 +30,7 @@ app.use(bookingsRoutes);
 app.use(chatRoutes);
 app.use(adminRoutes);
 app.use(savedRoutes);
+app.use(shareRoutes); // /share/... link-preview pages (HTML)
 
 app.use((req, res) => res.status(404).json({ error: `No route: ${req.method} ${req.path}` }));
 app.use(errorHandler);

@@ -23,6 +23,8 @@ import { addToCompare, getCompareIds, onCompareChange } from "../Compare/compare
 import Gallery from "./Gallery.jsx";
 import ListingMap from "./ListingMap.jsx";
 import { usePageTitle } from "../../hooks/usePageTitle.js";
+import ShareButton from "../../components/ShareButton.jsx";
+import { shareLink, shareText } from "../../utils/shareLink.js";
 
 export default function Listing() {
   const { user } = useAuth();
@@ -299,6 +301,22 @@ export default function Listing() {
                 </>
               )}
             </div>
+
+            {/* Share: buyers send it to family, sellers to their contacts. Live listings only,
+                because the preview page (/share/...) only shows live homes. */}
+            {listing.status === LISTING_STATUS.LIVE ? (
+              <ShareButton
+                url={shareLink(listing.id)}
+                text={shareText(listing)}
+                title={listing.title}
+              />
+            ) : (
+              isOwner && (
+                <p className="text-center text-xs text-muted">
+                  You can share this listing once it's live.
+                </p>
+              )
+            )}
 
             {inCompare ? (
               <Link

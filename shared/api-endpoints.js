@@ -50,6 +50,12 @@ export const API = {
   },
 };
 
+// Not under /api: tiny HTML pages with link-preview tags (WhatsApp, Facebook...) that then
+// send people on to the website. Served by the API server.
+export const SHARE = {
+  LISTING: "/share/listings/:id", // ?view=tour opens the 3D tour instead of the listing page
+};
+
 export function buildPath(pattern, params = {}) {
   return pattern.replace(/:(\w+)/g, (_, key) => encodeURIComponent(params[key]));
 }
