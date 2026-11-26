@@ -163,6 +163,36 @@ Message = {
 | `API.SAVED.ADD` | `POST /api/saved` | logged in | `{ listingId }` | `201 { listingId }` · live listings only (else `404`) · saving twice is fine |
 | `API.SAVED.REMOVE` | `DELETE /api/saved/:listingId` | logged in | `-` | `200 { listingId }` |
 
+## STATS  ·  `server/src/modules/stats/`
+
+| Constant | Method + URL | Who | Send | Get back |
+|---|---|---|---|---|
+| `API.LISTINGS.RECORD_VIEW` | `POST /api/listings/:id/views` | anyone | `{ kind: "page" \| "tour", sessionKey? }`. `sessionKey` is required when not logged in (8-64 letters, digits, `-`, `_`) | `200 { counted: boolean }` · `404` listing not live |
+| `API.LISTINGS.MINE_STATS` | `GET /api/listings/mine/stats` | seller | `-` | `200 { windowDays: 30, days: string[], items: ListingStats[] }` |
+
+- **Counting:** at most one view per viewer per listing per kind per `STATS.VIEW_DEDUPE_MINUTES` (60). Logged-in viewers are counted by user id. Anonymous visitors are counted by `sessionKey` (a random id the browser keeps in `localStorage`). `counted: false` means it was a repeat, or you own the listing.
+- Requests arriving at the same moment (double click, React StrictMode) are serialised with a Postgres advisory lock, so only one is counted.
+- The listing's owner and non-live listings are never counted.
+- The website sends `page` when the Listing page opens and `tour` when the Tour page opens.
+
+```js
+ListingStats = {
+  listingId: 7, title: "Heritage homestay", status: "live", hasTour: true,
+  last30Days: Numbers,   // created in the last STATS.WINDOW_DAYS days
+  allTime: Numbers,
+  dailyPageViews: [0, 0, 1, ..., 4]   // one number per entry in `days`, oldest first
+}
+Numbers = {
+  pageViews: 5, tourOpens: 2,
+  saves: 0,      // homes saved right now (removing a save removes it from the count)
+  chats: 1,      // conversations started
+  bookings: { requested: 1, confirmed: 0, declined: 0, cancelled: 3 }   // by created_at
+}
+// days: the last 30 calendar days in STATS.TIME_ZONE (Asia/Kathmandu), "YYYY-MM-DD", oldest first.
+// Tour open rate = tourOpens / pageViews (worked out in the browser). It can pass 100%,
+// because a tour can be opened straight from a shared link.
+```
+
 ## Live chat (Socket.IO)
 
 Connect to the same server URL. Event names are in `shared/socket-events.js`.
@@ -185,3 +215,4 @@ Add a line whenever this contract changes, so the other side knows to update.
 |---|---|---|
 | 2026-10-11 | M1 | First version |
 | 2026-11-22 | M1 | Added `API.LISTINGS.UPLOAD_IMAGES` (listing photos) and `?as=seller` on `API.BOOKINGS.MINE`; documented the login 401/403 errors |
+| 2026-11-26 | M1 | Added `API.LISTINGS.RECORD_VIEW` and `API.LISTINGS.MINE_STATS` (seller stats) |

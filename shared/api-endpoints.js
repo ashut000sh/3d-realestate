@@ -14,10 +14,12 @@ export const API = {
     LIST: "/api/listings",
     COMPARE: "/api/listings/compare",
     MINE: "/api/listings/mine",
+    MINE_STATS: "/api/listings/mine/stats",
     ONE: "/api/listings/:id",
     CREATE: "/api/listings",
     UPDATE: "/api/listings/:id",
     UPLOAD_IMAGES: "/api/listings/:id/images",
+    RECORD_VIEW: "/api/listings/:id/views",
   },
   SCANS: {
     CREATE: "/api/scan-requests",
