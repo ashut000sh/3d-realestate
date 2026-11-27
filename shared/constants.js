@@ -71,3 +71,11 @@ export const NEARBY = {
   TIMEOUT_MS: 8000,
   WALK_METERS_PER_MINUTE: 80,
 };
+
+// Short-stay availability calendar (GET /api/listings/:id/availability).
+// Stays with these statuses block their nights on the calendar.
+export const AVAILABILITY = {
+  BLOCKING_STATUSES: [BOOKING_STATUS.REQUESTED, BOOKING_STATUS.CONFIRMED],
+  DEFAULT_MONTHS: 6, // from today, when ?from / ?to are left out
+  MAX_MONTHS: 12, // longest range one request may ask for
+};
