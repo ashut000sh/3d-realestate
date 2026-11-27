@@ -17,12 +17,14 @@ import Input, { Textarea } from "../../components/Input.jsx";
 import { Skeleton } from "../../components/Loader.jsx";
 import { ROUTES, buildRoute } from "../../constants/routes.js";
 import { tokenStore } from "../../services/api.js";
-import { createBooking } from "../../services/bookings.service.js";
 import { getListing } from "../../services/listings.service.js";
 import { formatPrice } from "../../utils/formatPrice.js";
 import { mediaUrl } from "../../utils/mediaUrl.js";
 import Photo from "../../components/Photo.jsx";
+import StayCalendar from "../../components/StayCalendar.jsx";
 import { usePageTitle } from "../../hooks/usePageTitle.js";
+import { createBooking, getAvailability } from "../../services/bookings.service.js";
+import { addMonths } from "../../utils/dates.js";
 
 // "2026-12-20" -> "Sun, 20 Dec 2026"
 const prettyDate = (value) =>
@@ -57,6 +59,9 @@ export default function Booking() {
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
   const [booking, setBooking] = useState(null); // set after a successful request
+  // Short stays: booked dates for the calendar. loadedKey !== the wanted key = still loading.
+  const [availability, setAvailability] = useState({ loadedKey: null, blocked: [], error: "" });
+  const [availabilityVersion, setAvailabilityVersion] = useState(0); // bump to reload
 
   useEffect(() => {
     let cancelled = false;
@@ -67,6 +72,34 @@ export default function Booking() {
       cancelled = true;
     };
   }, [id]);
+
+  const stayListingId = listing && listing.type === LISTING_TYPE.SHORT_STAY ? listing.id : null;
+  const availabilityKey = stayListingId ? `${stayListingId}:${availabilityVersion}` : null;
+  // Calendar window: today to 12 months ahead (the most the API gives in one request)
+  const windowFrom = localDate();
+  const windowTo = addMonths(windowFrom, 12);
+
+  useEffect(() => {
+    if (!availabilityKey) return undefined;
+    let cancelled = false;
+    getAvailability(stayListingId, { from: windowFrom, to: windowTo })
+      .then(
+        (data) =>
+          !cancelled &&
+          setAvailability({ loadedKey: availabilityKey, blocked: data.blocked, error: "" }),
+      )
+      .catch(
+        (err) =>
+          !cancelled &&
+          setAvailability({ loadedKey: availabilityKey, blocked: [], error: err.message }),
+      );
+    return () => {
+      cancelled = true;
+    };
+    // the key covers the listing and reloads; the window only changes at midnight
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [availabilityKey]);
+  const availabilityLoading = availability.loadedKey !== availabilityKey;
 
   usePageTitle(listing ? `Book · ${listing.title}` : "Book");
 
@@ -182,7 +215,14 @@ export default function Booking() {
       setBooking(created);
     } catch (err) {
       if (err.status === 401) navigate(ROUTES.LOGIN);
-      else setErrors({ form: err.message });
+      else if (err.status === 409 && isStay) {
+        // Someone else got these nights first: show the fresh calendar and ask again
+        setErrors({
+          form: `${err.message}. The calendar has been updated, please pick new dates.`,
+        });
+        setForm((f) => ({ ...f, checkOut: "" }));
+        setAvailabilityVersion((v) => v + 1);
+      } else setErrors({ form: err.message });
     } finally {
       setSubmitting(false);
     }
@@ -211,27 +251,43 @@ export default function Booking() {
 
           <form onSubmit={handleSubmit} noValidate className="card mt-8 space-y-6 p-6 sm:p-8">
             {isStay ? (
-              <div className="grid gap-4 sm:grid-cols-2">
-                <Input
-                  label="Check-in"
-                  name="date"
-                  type="date"
-                  icon="calendar"
-                  min={today}
-                  value={form.date}
-                  onChange={set("date")}
-                  error={errors.date}
-                />
-                <Input
-                  label="Check-out"
-                  name="checkOut"
-                  type="date"
-                  icon="calendar"
-                  min={form.date || localDate(1)}
-                  value={form.checkOut}
-                  onChange={set("checkOut")}
-                  error={errors.checkOut}
-                />
+              <div>
+                <p className="label">Your dates</p>
+                {availabilityLoading ? (
+                  <div className="grid gap-8 md:grid-cols-2" aria-busy="true">
+                    {[0, 1].map((i) => (
+                      <div key={i} className={`space-y-3 ${i ? "hidden md:block" : ""}`}>
+                        <Skeleton className="mx-auto h-5 w-32" />
+                        <Skeleton className="h-64" />
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <>
+                    {availability.error && (
+                      <p className="mb-4 flex items-start gap-2 rounded-xl bg-warning-soft px-4 py-3 text-sm text-warning">
+                        <Icon name="info" className="mt-0.5 h-4 w-4" />
+                        Couldn't load booked dates ({availability.error}). You can still send a
+                        request; the host checks the dates.
+                      </p>
+                    )}
+                    <StayCalendar
+                      blocked={availability.blocked}
+                      checkIn={form.date || null}
+                      checkOut={form.checkOut || null}
+                      maxDate={windowTo}
+                      onChange={({ checkIn, checkOut }) => {
+                        setForm((f) => ({ ...f, date: checkIn ?? "", checkOut: checkOut ?? "" }));
+                        setErrors((e) => ({ ...e, date: undefined, checkOut: undefined }));
+                      }}
+                    />
+                  </>
+                )}
+                {(errors.date || errors.checkOut) && (
+                  <p className="mt-3 flex items-center gap-1 text-sm text-danger">
+                    <Icon name="alert" className="h-3.5 w-3.5" /> {errors.date || errors.checkOut}
+                  </p>
+                )}
               </div>
             ) : (
               <Input
@@ -268,8 +324,19 @@ export default function Booking() {
               </p>
             )}
 
+            {isStay && nights > 0 && (
+              <div className="flex flex-wrap items-baseline justify-between gap-2 rounded-xl bg-accent-soft px-4 py-3">
+                <span className="text-sm text-accent-dark">
+                  {nights} {nights === 1 ? "night" : "nights"} × {formatPrice(listing.price)}
+                </span>
+                <span className="display text-xl text-ink">
+                  {formatPrice(Number(listing.price) * nights)}
+                </span>
+              </div>
+            )}
+
             <Button type="submit" size="lg" className="w-full" loading={submitting}>
-              {submitting ? "Sending..." : "Send request"}
+              {submitting ? "Sending..." : isStay ? "Request booking" : "Send request"}
             </Button>
             <p className="flex items-center justify-center gap-2 text-center text-xs text-muted">
               <Icon name="shield" className="h-4 w-4" /> Nothing is paid now. The seller confirms or
