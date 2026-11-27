@@ -22,6 +22,7 @@ export const API = {
     NEARBY: "/api/listings/:id/nearby",
     AVAILABILITY: "/api/listings/:id/availability",
     RECORD_VIEW: "/api/listings/:id/views",
+    WALKING_ROUTE: "/api/listings/:id/route", // ?lat=&lng= of the destination
   },
   SCANS: {
     CREATE: "/api/scan-requests",

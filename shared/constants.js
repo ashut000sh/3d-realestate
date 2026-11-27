@@ -112,3 +112,14 @@ export const STATS = {
   TIME_ZONE: "Asia/Kathmandu", // where a "day" starts for the daily chart
   SESSION_KEY_MAX_LENGTH: 64,
 };
+
+// Walking route from a listing to a place (GET /api/listings/:id/route, OSRM foot routing)
+export const WALKING_ROUTE = {
+  CACHE_HOURS: 24,
+  FAILED_CACHE_MINUTES: 10,
+  TIMEOUT_MS: 8000,
+  RATE_LIMIT_PER_MINUTE: 30, // per IP: protects the free routing server
+  MAX_DISTANCE_METERS: 20000, // further than this isn't a walk; refused before asking the router
+  // Destinations must be in Nepal (roughly)
+  BOUNDS: { MIN_LAT: 26.3, MAX_LAT: 30.5, MIN_LNG: 80, MAX_LNG: 88.3 },
+};

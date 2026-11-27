@@ -22,3 +22,6 @@ export const updateListing = (id, fields) =>
   request("PATCH", buildPath(API.LISTINGS.UPDATE, { id }), { body: fields }).then((d) => d.listing);
 // { items: [{ category, name, lat, lng, distanceMeters }], message } — never fails on Overpass outages
 export const getNearbyPlaces = (id) => request("GET", buildPath(API.LISTINGS.NEARBY, { id }));
+// Walking route to a place: { distanceMeters, durationMinutes, coordinates: [[lat, lng]], approximate }
+export const getWalkingRoute = (id, { lat, lng }) =>
+  request("GET", buildPath(API.LISTINGS.WALKING_ROUTE, { id }), { query: { lat, lng } });

@@ -74,7 +74,7 @@ function distanceMeters(lat1, lng1, lat2, lng2) {
   return 2 * 6371000 * Math.asin(Math.sqrt(a));
 }
 
-// Overpass elements -> [{ category, name, lat, lng, distanceMeters }], nearest first,
+// Overpass elements -> [{ id, category, name, lat, lng, distanceMeters }], nearest first,
 // at most NEARBY.MAX_PER_CATEGORY per category.
 export function toPlaces(elements, lat, lng) {
   const places = [];
@@ -92,7 +92,15 @@ export function toPlaces(elements, lat, lng) {
     const key = `${category}|${name}|${Math.round(distance / 25)}`;
     if (seen.has(key)) continue;
     seen.add(key);
-    places.push({ category, name, lat: pLat, lng: pLng, distanceMeters: distance });
+    // id: the OpenStreetMap element, e.g. "node/123" (stable, so the website can key on it)
+    places.push({
+      id: `${el.type}/${el.id}`,
+      category,
+      name,
+      lat: pLat,
+      lng: pLng,
+      distanceMeters: distance,
+    });
   }
   places.sort((a, b) => a.distanceMeters - b.distanceMeters);
   const perCategory = {};
