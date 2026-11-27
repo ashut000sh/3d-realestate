@@ -79,3 +79,16 @@ export const AVAILABILITY = {
   DEFAULT_MONTHS: 6, // from today, when ?from / ?to are left out
   MAX_MONTHS: 12, // longest range one request may ask for
 };
+
+// What was opened, for seller stats (listing_views.kind; CHECK constraint in 005_listing_views.sql)
+export const VIEW_KIND = {
+  PAGE: "page", // the listing page
+  TOUR: "tour", // the 3D tour
+};
+
+export const STATS = {
+  WINDOW_DAYS: 30, // "last 30 days" numbers and the daily chart
+  VIEW_DEDUPE_MINUTES: 60, // one view per viewer/session per listing per kind in this time
+  TIME_ZONE: "Asia/Kathmandu", // where a "day" starts for the daily chart
+  SESSION_KEY_MAX_LENGTH: 64,
+};

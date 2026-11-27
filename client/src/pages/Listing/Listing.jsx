@@ -23,6 +23,8 @@ import { addToCompare, getCompareIds, onCompareChange } from "../Compare/compare
 import Gallery from "./Gallery.jsx";
 import NearbySection from "./NearbySection.jsx";
 import { usePageTitle } from "../../hooks/usePageTitle.js";
+import { recordView } from "../../services/stats.service.js";
+import { VIEW_KIND } from "@realestate/shared";
 
 export default function Listing() {
   const { user } = useAuth();
@@ -53,6 +55,11 @@ export default function Listing() {
     return () => {
       cancelled = true;
     };
+  }, [id]);
+
+  // Seller stats: count this page view (the server ignores repeats within the hour and the owner)
+  useEffect(() => {
+    recordView(id, VIEW_KIND.PAGE);
   }, [id]);
 
   // Keep the "Added to compare" state right, even if changed on another page or tab
