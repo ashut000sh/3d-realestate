@@ -19,5 +19,8 @@
     "nodemailer": "^10.6.1",
     "pg": "^8.23.1",
     "socket.io": "^4.8.4"
+  },
+  "devDependencies": {
+    "sharp": "^0.35.5"
   }
 }

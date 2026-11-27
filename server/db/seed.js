@@ -1,6 +1,8 @@
 // Fills the database with sample data for testing. Usage: npm run db:seed -w server
 // WARNING: it first EMPTIES every table, so never run it against real data.
 // Run the migrations first: npm run db:migrate -w server
+import fs from "node:fs";
+import path from "node:path";
 import bcrypt from "bcryptjs";
 import pg from "pg";
 import {
@@ -12,7 +14,6 @@ import {
   ROLES,
   SCAN_STATUS,
 } from "@realestate/shared";
-import { LISTING_PHOTOS } from "./seed-photos.js";
 
 const PASSWORD = "Password123!";
 
@@ -353,12 +354,31 @@ function nearby([lat, lng], i) {
   return [lat + ((i % 5) - 2) * 0.008, lng + ((i % 3) - 1) * 0.01];
 }
 
-// Real photos that match each listing (Wikimedia Commons, credits in seed-photos.js)
-const photosFor = (listing) => {
-  const photos = LISTING_PHOTOS[listing.title];
-  if (!photos) throw new Error(`No photos for "${listing.title}" in seed-photos.js`);
-  return photos;
-};
+// Photos are stored in the project (server/db/seed-assets/listings/<slug>/1.jpg, 2.jpg, 3.jpg,
+// 1 = cover; credits in seed-photos.js) and copied to where uploaded photos live,
+// server/uploads/listings/<listing id>/, so the demo works offline.
+const SEED_PHOTOS_DIR = path.resolve(import.meta.dirname, "seed-assets/listings");
+const UPLOADED_LISTINGS_DIR = path.resolve(import.meta.dirname, "../uploads/listings");
+const PHOTO_FILES = ["1.jpg", "2.jpg", "3.jpg"];
+
+const slugOf = (title) =>
+  title
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+
+// Copies the listing's photos and returns their URLs, in order (the first is the cover)
+function copyPhotos(listing, listingId) {
+  const from = path.join(SEED_PHOTOS_DIR, slugOf(listing.title));
+  const to = path.join(UPLOADED_LISTINGS_DIR, String(listingId));
+  fs.mkdirSync(to, { recursive: true });
+  return PHOTO_FILES.map((file) => {
+    const source = path.join(from, file);
+    if (!fs.existsSync(source)) throw new Error(`Missing seed photo ${source}`);
+    fs.copyFileSync(source, path.join(to, file));
+    return `/uploads/listings/${listingId}/${file}`;
+  });
+}
 
 // ---------- seeding ----------
 
@@ -385,6 +405,10 @@ async function seed(client) {
     );
     userId[user.key] = rows[0].id;
   }
+
+  // Start with no listing photos on disk, so old test uploads don't pile up.
+  // Only listings/: uploaded 3D tours in uploads/tours/ are left alone.
+  fs.rmSync(UPLOADED_LISTINGS_DIR, { recursive: true, force: true });
 
   const listingIds = [];
   const districtCount = {};
@@ -423,7 +447,7 @@ async function seed(client) {
     const listingId = rows[0].id;
     listingIds.push(listingId);
 
-    for (const [position, url] of photosFor(listing).entries()) {
+    for (const [position, url] of copyPhotos(listing, listingId).entries()) {
       await client.query(
         "INSERT INTO listing_images (listing_id, url, position) VALUES ($1, $2, $3)",
         [listingId, url, position],
