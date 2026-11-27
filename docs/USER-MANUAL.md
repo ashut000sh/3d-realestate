@@ -158,6 +158,18 @@ team with a LiDAR scanner.
 3. Add as many measurements as you like. Each one is listed in **Measurements**: remove one with
    its ✕, or press **Clear all**. Clicked the first point by mistake? Press **Esc** to drop it.
 
+**See each floor (houses with more than one storey)**
+
+1. Press **Floors** (or the **F** key). The storeys separate: the upper floors lift up so you can
+   look into every level. Each level has a label, for example **LEVEL 2 · 2 bedrooms**.
+2. Use the small buttons **All · L1 · L2 …** to look at one level: the others fade out and the
+   view moves to that level. **All** shows them all again.
+3. Press **Floors** again (or **Esc**) to put the house back together. **Reset** also does this.
+
+**Measure** is switched off while the floors are separated, because the lifted floors are no
+longer at their real height: put the floors back together to measure. Single-storey homes don't
+show the Floors button.
+
 When you've seen enough, press **Book a visit** to book a viewing.
 
 > 📷 `07-tour.png`: the 3D tour with one measurement shown

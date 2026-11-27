@@ -1,5 +1,8 @@
 // Makes the sample 3D tours used by the seed data: npm run tours
-// Writes client/public/tours/{house,apartment,room,office}.glb (git-ignored, ~100 KB each).
+// Writes client/public/tours/{house,apartment,room,office}.glb (git-ignored, ~100 KB each),
+// plus two multi-storey models for the tour's "Floors" view:
+//   house-two-storey.glb  nodes named Level_1 / Level_2 (the naming rule in docs/3D-PIPELINE.md)
+//   townhouse.glb         3 storeys with unnamed nodes, so the viewer has to auto-detect levels
 // They are simple furnished rooms built from boxes, to real sizes (1 unit = 1 metre),
 // so the Tour screen and its measure tool can be tried without a LiDAR scan.
 // Needs the `three` package, which the client installs (feature/shared-components).
@@ -52,6 +55,8 @@ const COLORS = {
 
 function makeBuilder() {
   const scene = new THREE.Scene();
+  // Where new meshes go: the scene, or a level group (see level() below)
+  let target = scene;
   const materials = {};
   const mat = (color, roughness = 0.85, extra = {}) => {
     const key = `${color}-${roughness}-${JSON.stringify(extra)}`;
@@ -62,13 +67,13 @@ function makeBuilder() {
   const box = (w, h, d, color, x, y, z, roughness) => {
     const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat(color, roughness));
     mesh.position.set(x, y, z);
-    scene.add(mesh);
+    target.add(mesh);
     return mesh;
   };
   const cylinder = (rTop, rBottom, h, color, x, y, z) => {
     const mesh = new THREE.Mesh(new THREE.CylinderGeometry(rTop, rBottom, h, 24), mat(color, 0.6));
     mesh.position.set(x, y, z);
-    scene.add(mesh);
+    target.add(mesh);
     return mesh;
   };
   const glass = (w, h, d, x, y, z) => {
@@ -77,9 +82,20 @@ function makeBuilder() {
       mat(COLORS.glass, 0.1, { transparent: true, opacity: 0.35 }),
     );
     mesh.position.set(x, y, z);
-    scene.add(mesh);
+    target.add(mesh);
   };
-  return { scene, box, cylinder, glass };
+  // Start a storey: a group raised to `y`, which all following meshes go into.
+  // name "" leaves it unnamed (the viewer then has to auto-detect the levels).
+  const level = (name, y, userData = {}) => {
+    const group = new THREE.Group();
+    group.name = name;
+    group.position.y = y;
+    group.userData = userData; // exported as glTF "extras", e.g. { summary: "2 bedrooms" }
+    scene.add(group);
+    target = group;
+    return group;
+  };
+  return { scene, box, cylinder, glass, level };
 }
 
 // ---------- furniture ----------
@@ -333,8 +349,98 @@ function office() {
   return b.scene;
 }
 
+// ---------- multi-storey models (for the tour's "Floors" view) ----------
+const STOREY = 3.0; // floor to floor, metres (2.8 m rooms + slab)
+
+// A straight staircase from this floor to the next, along x (it spans two levels on purpose:
+// auto-detection keeps it with the level it starts on)
+function stairs(b, x, z, steps = 15, width = 1.0) {
+  const rise = STOREY / steps;
+  const run = 0.26;
+  for (let i = 0; i < steps; i++) {
+    b.box(run, rise * (i + 1), width, COLORS.darkWood, x + i * run, (rise * (i + 1)) / 2, z);
+  }
+}
+
+function groundFloor(b, W, D) {
+  shell(b, {
+    w: W,
+    d: D,
+    wall: COLORS.wallWarm,
+    openings: [
+      { wall: "north", at: -2.5, width: 1.6, kind: "window" },
+      { wall: "west", at: 0, width: 1.4, kind: "window" },
+      { wall: "east", at: 1.8, width: 1.0, kind: "door" },
+    ],
+  });
+  innerWall(b, 1, -D / 2, 1, D / 2);
+  rug(b, -2, -1, 3, 2.2);
+  sofa(b, -2, -2.6, 2.4);
+  table(b, -2, -1, 1.2, 0.6, 0.42);
+  b.box(1.6, 0.5, 0.4, COLORS.darkWood, -2, 0.25, 2.2); // TV unit
+  lamp(b, -4, -3);
+  plant(b, -0.3, -3);
+  b.box(3.3, 0.9, 0.6, COLORS.white, 2.85, 0.45, 3.15); // kitchen counter
+  b.box(3.3, 0.05, 0.64, COLORS.grey, 2.85, 0.92, 3.15);
+  b.box(0.6, 1.8, 0.6, COLORS.white, 4.1, 0.9, 1.0); // fridge
+  table(b, 2.4, 0.6, 1.2, 0.8);
+  chair(b, 1.9, 0.1);
+  chair(b, 2.9, 0.1);
+  stairs(b, 1.4, -2.9, 12, 0.9);
+}
+
+function bedroomFloor(b, W, D, beds = 2) {
+  shell(b, {
+    w: W,
+    d: D,
+    openings: [
+      { wall: "north", at: -2.5, width: 1.6, kind: "window" },
+      { wall: "north", at: 2.5, width: 1.6, kind: "window" },
+      { wall: "west", at: 0.5, width: 1.4, kind: "window" },
+    ],
+  });
+  innerWall(b, 0, -D / 2, 0, D / 2);
+  bed(b, -2.4, -1.6, 1.8);
+  b.box(0.6, 2, 1.4, COLORS.darkWood, -4.1, 1, 1.5); // wardrobe
+  if (beds > 1) {
+    bed(b, 2.4, -1.6, 1.2, COLORS.gold);
+    b.box(1.0, 0.75, 0.5, COLORS.wood, 2.6, 0.38, 2.6); // desk
+    chair(b, 2.6, 2.1);
+  }
+  plant(b, -0.5, 3);
+}
+
+function houseTwoStorey() {
+  const b = makeBuilder();
+  b.level("Level_1", 0, { summary: "Living room · kitchen" });
+  groundFloor(b, 9, 7);
+  b.level("Level_2", STOREY, { summary: "2 bedrooms" });
+  bedroomFloor(b, 9, 7, 2);
+  return b.scene;
+}
+
+// Same idea, three storeys, unnamed nodes: the viewer must find the levels by height
+function townhouse() {
+  const b = makeBuilder();
+  b.level("", 0);
+  groundFloor(b, 9, 7);
+  b.level("", STOREY);
+  bedroomFloor(b, 9, 7, 2);
+  stairs(b, 1.4, 2.9, 12, 0.9); // first floor -> roof terrace
+  b.level("", STOREY * 2);
+  bedroomFloor(b, 9, 7, 1);
+  return b.scene;
+}
+
 // ---------- write files ----------
-const TOURS = { house, apartment, room, office };
+const TOURS = {
+  house,
+  apartment,
+  room,
+  office,
+  "house-two-storey": houseTwoStorey,
+  townhouse,
+};
 fs.mkdirSync(OUT_DIR, { recursive: true });
 const exporter = new GLTFExporter();
 for (const [name, build] of Object.entries(TOURS)) {

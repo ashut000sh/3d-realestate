@@ -60,7 +60,7 @@ The seed prints the test accounts. All of them use the password `Password123!`:
 Sample 3D tours (so the Tour screen works without a LiDAR scan):
 
 ```bash
-npm run tours                            # writes client/public/tours/*.glb
+npm run tours                            # writes client/public/tours/*.glb (incl. 2 multi-storey models)
 ```
 
 ## 5. Run it
