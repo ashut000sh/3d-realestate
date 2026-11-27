@@ -113,7 +113,13 @@ Click any card to open the home. You see:
 
 - **Photos**: use the arrows or the small pictures underneath
 - the **price**, address, bedrooms, bathrooms, area and description
-- a **map** of where it is
+- a **map** of where it is, with **what's nearby** (schools, clinics, pharmacies, bus stops,
+  temples, markets, banks) within 1 km
+- **walking routes**: tap a place in the "What's nearby" list, tap its marker, or tap **any spot on
+  the map**. The real walking route is drawn on the map with a card like **"8 min · 600 m, From
+  this home to Kamalpokhari Bus Stop"**. Tap another place to switch, or **Clear** to remove it.
+  Use the **Find a place nearby** box to search the list by name. If the route service is busy,
+  the card says **approx.** and shows a straight line instead.
 - who listed it
 - buttons to **Open 3D tour**, **Book a viewing** (or **Book a stay**), **Chat with seller**,
   **Save** and **Add to compare**

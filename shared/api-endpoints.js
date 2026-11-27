@@ -19,6 +19,7 @@ export const API = {
     UPDATE: "/api/listings/:id",
     UPLOAD_IMAGES: "/api/listings/:id/images",
     NEARBY: "/api/listings/:id/nearby",
+    WALKING_ROUTE: "/api/listings/:id/route", // ?lat=&lng= of the destination
   },
   SCANS: {
     CREATE: "/api/scan-requests",

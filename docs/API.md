@@ -92,6 +92,7 @@ Message = {
 }
 
 NearbyPlace = {          // from OpenStreetMap, within NEARBY.RADIUS_METERS (1000 m)
+  id: "node/1399507923", // the OpenStreetMap element (stable)
   category: "bus_stop",  // one of NEARBY_CATEGORY: school | health | pharmacy | bus_stop | worship | market | bank
   name: "Kamalpokhari Bus Stop",  // OSM English name, else local name, else e.g. "Bus stop"
   lat: 27.7101,
@@ -185,6 +186,20 @@ NearbyPlace = {          // from OpenStreetMap, within NEARBY.RADIUS_METERS (100
 - Listing without `lat`/`lng`: `200 { items: [], message: "This home has no map location yet." }`.
 - The cache lives in memory: it empties when the server restarts and isn't shared between server instances.
 
+## WALKING  ·  `server/src/modules/walking/`
+
+| Constant | Method + URL | Who | Send | Get back |
+|---|---|---|---|---|
+| `API.LISTINGS.WALKING_ROUTE` | `GET /api/listings/:id/route` | anyone (same visibility as `GET /api/listings/:id`) · **rate limited** | `query: ?lat=&lng=` (the destination) | `200 { distanceMeters, durationMinutes, coordinates: [[lat, lng], ...], approximate }` |
+
+- **Destination:** `lat` 26.3–30.5 and `lng` 80–88.3 (roughly Nepal, `WALKING_ROUTE.BOUNDS`), and at most 20 km from the listing. Otherwise `400`.
+- **Other errors:** `400` if the listing has no map location. `404` if the listing can't be seen (drafts, for strangers). `429` with `Retry-After` after `WALKING_ROUTE.RATE_LIMIT_PER_MINUTE` (30) requests per minute from one IP.
+- **Routing:** the **server** asks an OSRM server with a foot profile, `env.ROUTING_URL` (default `https://routing.openstreetmap.de/routed-foot`), with `/route/v1/foot/{lng1},{lat1};{lng2},{lat2}?overview=full&geometries=geojson`. Coordinates come back as `[lat, lng]` (ready for Leaflet).
+- **Walking time:** the router's own duration; if it's missing, distance ÷ 80 m per minute (at least 1 minute).
+- **Router failure** (down, slow past `WALKING_ROUTE.TIMEOUT_MS` = 8 s, no route) is **not** an error: `200` with a straight line and `approximate: true`. The website then shows "approx.".
+- **Cache:** each listing + destination is cached in server memory for 24 h, and a failure for 10 min. The limiter and the cache are per server process and empty on restart.
+- **Behind a proxy** (Render, nginx), set `app.set("trust proxy", 1)` so the rate limit sees each visitor's real IP.
+
 ## Live chat (Socket.IO)
 
 Connect to the same server URL. Event names are in `shared/socket-events.js`.
@@ -207,4 +222,5 @@ Add a line whenever this contract changes, so the other side knows to update.
 |---|---|---|
 | 2026-10-11 | M1 | First version |
 | 2026-11-22 | M1 | Added `API.LISTINGS.UPLOAD_IMAGES` (listing photos) and `?as=seller` on `API.BOOKINGS.MINE`; documented the login 401/403 errors |
+| 2026-11-27 | M1 | Added `API.LISTINGS.WALKING_ROUTE` (walking route to a place, rate limited) and `id` on `NearbyPlace` |
 | 2026-11-26 | M1 | Added `API.LISTINGS.NEARBY` (nearby places from OpenStreetMap) and the `NearbyPlace` shape |
