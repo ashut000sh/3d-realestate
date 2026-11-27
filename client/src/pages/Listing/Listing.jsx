@@ -21,8 +21,10 @@ import { getListing } from "../../services/listings.service.js";
 import { LISTING_TYPE_LABEL, formatPrice } from "../../utils/formatPrice.js";
 import { addToCompare, getCompareIds, onCompareChange } from "../Compare/compareStore.js";
 import Gallery from "./Gallery.jsx";
-import ListingMap from "./ListingMap.jsx";
+import NearbySection from "./NearbySection.jsx";
 import { usePageTitle } from "../../hooks/usePageTitle.js";
+import { recordView } from "../../services/stats.service.js";
+import { VIEW_KIND } from "@realestate/shared";
 import TrustBadges, { VerifiedBadge } from "../../components/TrustBadges.jsx";
 
 export default function Listing() {
@@ -54,6 +56,11 @@ export default function Listing() {
     return () => {
       cancelled = true;
     };
+  }, [id]);
+
+  // Seller stats: count this page view (the server ignores repeats within the hour and the owner)
+  useEffect(() => {
+    recordView(id, VIEW_KIND.PAGE);
   }, [id]);
 
   // Keep the "Added to compare" state right, even if changed on another page or tab
@@ -233,11 +240,13 @@ export default function Listing() {
           )}
 
           {hasLocation && (
-            <section>
-              <h2 className="display text-2xl text-ink">Where it is</h2>
-              <p className="mt-1 mb-4 text-muted">{listing.district}, Nepal</p>
-              <ListingMap lat={listing.lat} lng={listing.lng} />
-            </section>
+            <NearbySection
+              key={listing.id}
+              listingId={listing.id}
+              lat={listing.lat}
+              lng={listing.lng}
+              district={listing.district}
+            />
           )}
         </div>
 

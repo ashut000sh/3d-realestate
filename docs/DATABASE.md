@@ -18,9 +18,13 @@ by `npm run db:migrate -w server`. Sample data: `npm run db:seed` (empties every
 | `002_message_read_at.sql` | `messages.read_at` (for unread counts) and indexes on `conversations.buyer_id` / `seller_id` |
 | `003_otp_attempts.sql` | `otp_codes.attempts` (wrong OTP guesses; the code is used up after 5) |
 | `004_saved_listings.sql` | `saved_listings`: each user's saved homes (the heart button) |
+| `005_listing_views.sql` | `listing_views`: listing page views and 3D tour opens (seller stats) |
 | `006_seller_verification.sql` | `users.seller_verified_at` and `seller_verified_by` ("Verified seller" badge) |
 
 `schema_migrations` (made by the migration runner) remembers which files already ran.
+
+Not in the database: **nearby places** (`GET /api/listings/:id/nearby`) come from OpenStreetMap and
+are cached in server memory for 24 hours, keyed by listing id and location. No table, no migration.
 
 ## How the tables connect
 
@@ -39,10 +43,12 @@ erDiagram
     users ||--o{ messages : "sends"
     users ||--o{ saved_listings : "saves"
     listings ||--o{ saved_listings : "is saved"
+    listings ||--o{ listing_views : "is viewed"
+    users |o--o{ listing_views : "views"
 ```
 
 Deleting a listing also deletes its photos, scan requests, bookings and conversations
-(`ON DELETE CASCADE`). Deleting a user deletes their OTP codes.
+(`ON DELETE CASCADE`) and its views. Deleting a user deletes their OTP codes.
 
 ## Tables
 
@@ -133,6 +139,25 @@ Only `live` listings appear in search and compare, and only their seller and adm
 | created_at | TIMESTAMPTZ | |
 
 Two confirmed stays on the same listing can't overlap (checked when booking and when confirming).
+
+The short-stay calendar (`GET /api/listings/:id/availability`) reads this table: stays that are
+`requested` or `confirmed` block their nights `date` … `check_out - 1`. Only the dates leave the
+server. No new columns or migration.
+
+### listing_views
+
+| Column | Type | Notes |
+|---|---|---|
+| id | BIGSERIAL | primary key |
+| listing_id | INT → listings | `ON DELETE CASCADE` |
+| viewer_id | INT → users | logged-in viewer; `NULL` for anonymous visitors. Set to `NULL` if the user is deleted, so the view still counts |
+| kind | TEXT | `page` or `tour` (`VIEW_KIND`) |
+| session_key | TEXT | random id of an anonymous visitor's browser; `NULL` when `viewer_id` is set |
+| created_at | TIMESTAMPTZ | |
+
+Index `(listing_id, kind, created_at)`: used both for the "already counted this hour?" check and
+for the stats. The API writes at most one row per viewer (or session) per listing per kind per hour,
+and never for the listing's owner. Only `server/src/modules/stats/` writes this table.
 
 ### saved_listings
 

@@ -1,8 +1,15 @@
 // BOOKINGS service: all database queries for this module live here.
 // Controllers call these functions; nothing else touches the bookings table.
-import { BOOKING_KIND, BOOKING_STATUS, LISTING_STATUS, LISTING_TYPE } from "@realestate/shared";
+import {
+  AVAILABILITY,
+  BOOKING_KIND,
+  BOOKING_STATUS,
+  LISTING_STATUS,
+  LISTING_TYPE,
+} from "@realestate/shared";
 import { query } from "../../config/db.js";
 import { httpError } from "../../middleware/errorHandler.js";
+import { getVisibleListing } from "../listings/listings.service.js";
 
 // Columns for a Booking (docs/API.md). DATE columns go out as "YYYY-MM-DD" text,
 // so time zones can never shift them by a day. Always used with BOOKING_FROM, which adds
@@ -100,6 +107,39 @@ export async function createBooking(userId, { listingId, kind, date, checkOut, m
     ],
   );
   return { booking: await getBooking(inserted.rows[0].id) };
+}
+
+// Blocked nights of a short-stay listing between from and to ("YYYY-MM-DD", to exclusive).
+// Only dates go out: no booking ids, guest names or statuses. Touching or overlapping stays are
+// merged into one range, so the calendar doesn't even show how many bookings there are.
+// Each range is { start, end }: nights start..end-1 are taken; `end` is the check-out day, which
+// is free for a new guest to check in.
+// viewer = { id, role } | null: same visibility rule as GET /api/listings/:id.
+export async function getAvailability(listingId, from, to, viewer) {
+  const { listing } = await getVisibleListing(listingId, viewer);
+  if (listing.type !== LISTING_TYPE.SHORT_STAY) {
+    throw httpError(400, "Availability is only for short stay listings");
+  }
+
+  const { rows } = await query(
+    `SELECT to_char(date, 'YYYY-MM-DD') AS start, to_char(check_out, 'YYYY-MM-DD') AS "end"
+       FROM bookings
+      WHERE listing_id = $1 AND kind = $2 AND status = ANY($3::text[])
+        AND check_out IS NOT NULL AND date < $5 AND check_out > $4
+      ORDER BY date, check_out`,
+    [listingId, BOOKING_KIND.STAY, AVAILABILITY.BLOCKING_STATUSES, from, to],
+  );
+
+  const blocked = [];
+  for (const { start, end } of rows) {
+    const last = blocked[blocked.length - 1];
+    if (last && start <= last.end) {
+      if (end > last.end) last.end = end; // touching or overlapping: extend
+    } else {
+      blocked.push({ start, end });
+    }
+  }
+  return { from, to, blocked };
 }
 
 // asSeller = false: bookings I made. asSeller = true: bookings on listings I own.

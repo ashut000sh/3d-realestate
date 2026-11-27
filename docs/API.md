@@ -95,6 +95,14 @@ Message = {
   body: "Is the price negotiable?",
   createdAt: "...",
 }
+
+NearbyPlace = {          // from OpenStreetMap, within NEARBY.RADIUS_METERS (1000 m)
+  category: "bus_stop",  // one of NEARBY_CATEGORY: school | health | pharmacy | bus_stop | worship | market | bank
+  name: "Kamalpokhari Bus Stop",  // OSM English name, else local name, else e.g. "Bus stop"
+  lat: 27.7101,
+  lng: 85.3262,
+  distanceMeters: 220    // straight line from the listing, rounded
+}
 ```
 
 ---
@@ -137,6 +145,14 @@ Message = {
 | `API.BOOKINGS.CREATE` | `POST /api/bookings` | logged in | `{ listingId, kind: "viewing" \| "stay", date, checkOut?, message }` | `201 { booking: Booking }` |
 | `API.BOOKINGS.MINE` | `GET /api/bookings/mine` | logged in | `query: ?as=seller (bookings on my listings instead of bookings I made)` | `200 { items: Booking[] }` |
 | `API.BOOKINGS.UPDATE_STATUS` | `PATCH /api/bookings/:id/status` | listing owner | `{ status }` | `200 { booking: Booking }` |
+| `API.LISTINGS.AVAILABILITY` | `GET /api/listings/:id/availability` | anyone (same visibility as `GET /api/listings/:id`) | `query: ?from=YYYY-MM-DD&to=YYYY-MM-DD` (both optional) | `200 { from, to, blocked: [{ start, end }] }` · `400` not a short stay, bad dates or range too long · `404` listing can't be seen |
+
+**Availability** (short stays only, lives in the bookings module):
+
+- Default range: today to `AVAILABILITY.DEFAULT_MONTHS` (6) months ahead. At most `AVAILABILITY.MAX_MONTHS` (12) months per request. `to` is exclusive.
+- `blocked` comes from stays with status in `AVAILABILITY.BLOCKING_STATUSES` (`requested`, `confirmed`). Nights `start` … `end - 1` are taken. `end` is the check-out day, which is free for a new check-in.
+- Touching or overlapping stays are merged into one range. **Only dates are returned**: no booking ids, guests, statuses or messages.
+- The calendar is a guide. `POST /api/bookings` still decides: it returns `409` for a stay that overlaps a **confirmed** one. Two guests may both *request* the same nights, and the owner confirms one; confirming the second then returns `409`.
 
 ## CHAT  ·  owner M5  ·  `server/src/modules/chat/`
 
@@ -170,6 +186,50 @@ Message = {
 | `API.SAVED.ADD` | `POST /api/saved` | logged in | `{ listingId }` | `201 { listingId }` · live listings only (else `404`) · saving twice is fine |
 | `API.SAVED.REMOVE` | `DELETE /api/saved/:listingId` | logged in | `-` | `200 { listingId }` |
 
+## NEARBY  ·  `server/src/modules/nearby/`
+
+| Constant | Method + URL | Who | Send | Get back |
+|---|---|---|---|---|
+| `API.LISTINGS.NEARBY` | `GET /api/listings/:id/nearby` | anyone (same visibility as `GET /api/listings/:id`: live, or the seller's own / admin) | `-` | `200 { items: NearbyPlace[], message: string \| null }` nearest first, at most `NEARBY.MAX_PER_CATEGORY` (10) per category · `404` if the listing can't be seen |
+
+- The **server** asks the OpenStreetMap Overpass API (never the browser). Servers in `OVERPASS_URLS`
+  (optional env, comma-separated) are tried one after another within `NEARBY.TIMEOUT_MS` (8 s) in total.
+- Results are cached in server memory per listing (and location) for `NEARBY.CACHE_HOURS` (24 h).
+  A failed lookup is cached for `NEARBY.FAILED_CACHE_MINUTES` (10 min) so a slow Overpass isn't hammered.
+- Overpass down or slow is **not** an error: `200 { items: [], message: "Nearby places are unavailable right now..." }`.
+- Listing without `lat`/`lng`: `200 { items: [], message: "This home has no map location yet." }`.
+- The cache lives in memory: it empties when the server restarts and isn't shared between server instances.
+
+## STATS  ·  `server/src/modules/stats/`
+
+| Constant | Method + URL | Who | Send | Get back |
+|---|---|---|---|---|
+| `API.LISTINGS.RECORD_VIEW` | `POST /api/listings/:id/views` | anyone | `{ kind: "page" \| "tour", sessionKey? }`. `sessionKey` is required when not logged in (8-64 letters, digits, `-`, `_`) | `200 { counted: boolean }` · `404` listing not live |
+| `API.LISTINGS.MINE_STATS` | `GET /api/listings/mine/stats` | seller | `-` | `200 { windowDays: 30, days: string[], items: ListingStats[] }` |
+
+- **Counting:** at most one view per viewer per listing per kind per `STATS.VIEW_DEDUPE_MINUTES` (60). Logged-in viewers are counted by user id. Anonymous visitors are counted by `sessionKey` (a random id the browser keeps in `localStorage`). `counted: false` means it was a repeat, or you own the listing.
+- Requests arriving at the same moment (double click, React StrictMode) are serialised with a Postgres advisory lock, so only one is counted.
+- The listing's owner and non-live listings are never counted.
+- The website sends `page` when the Listing page opens and `tour` when the Tour page opens.
+
+```js
+ListingStats = {
+  listingId: 7, title: "Heritage homestay", status: "live", hasTour: true,
+  last30Days: Numbers,   // created in the last STATS.WINDOW_DAYS days
+  allTime: Numbers,
+  dailyPageViews: [0, 0, 1, ..., 4]   // one number per entry in `days`, oldest first
+}
+Numbers = {
+  pageViews: 5, tourOpens: 2,
+  saves: 0,      // homes saved right now (removing a save removes it from the count)
+  chats: 1,      // conversations started
+  bookings: { requested: 1, confirmed: 0, declined: 0, cancelled: 3 }   // by created_at
+}
+// days: the last 30 calendar days in STATS.TIME_ZONE (Asia/Kathmandu), "YYYY-MM-DD", oldest first.
+// Tour open rate = tourOpens / pageViews (worked out in the browser). It can pass 100%,
+// because a tour can be opened straight from a shared link.
+```
+
 ## Live chat (Socket.IO)
 
 Connect to the same server URL. Event names are in `shared/socket-events.js`.
@@ -192,4 +252,7 @@ Add a line whenever this contract changes, so the other side knows to update.
 |---|---|---|
 | 2026-10-11 | M1 | First version |
 | 2026-11-22 | M1 | Added `API.LISTINGS.UPLOAD_IMAGES` (listing photos) and `?as=seller` on `API.BOOKINGS.MINE`; documented the login 401/403 errors |
+| 2026-11-26 | M1 | Added `API.LISTINGS.NEARBY` (nearby places from OpenStreetMap) and the `NearbyPlace` shape |
+| 2026-11-26 | M1 | Added `API.LISTINGS.AVAILABILITY` (blocked dates for the short-stay calendar) |
+| 2026-11-26 | M1 | Added `API.LISTINGS.RECORD_VIEW` and `API.LISTINGS.MINE_STATS` (seller stats) |
 | 2026-11-26 | M1 | Trust badges: `tourVerified` / `sellerVerified` on listings and conversations, `?verifiedSeller` search filter, `API.ADMIN.VERIFY_SELLER` / `UNVERIFY_SELLER` |

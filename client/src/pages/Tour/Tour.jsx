@@ -12,6 +12,8 @@ import Icon from "../../components/Icon.jsx";
 import Logo from "../../components/Logo.jsx";
 import { ROUTES, buildRoute } from "../../constants/routes.js";
 import { getListing } from "../../services/listings.service.js";
+import { recordView } from "../../services/stats.service.js";
+import { VIEW_KIND } from "@realestate/shared";
 import { formatPrice } from "../../utils/formatPrice.js";
 import { mediaUrl } from "../../utils/mediaUrl.js";
 import { TourViewer, formatLength } from "./TourViewer.js";
@@ -55,6 +57,11 @@ export default function Tour() {
   const [waitingSecondPoint, setWaitingSecondPoint] = useState(false);
   const [autoRotate, setAutoRotate] = useState(false);
   const [showHelp, setShowHelp] = useState(true);
+
+  // Seller stats: count this tour open (the server ignores repeats within the hour and the owner)
+  useEffect(() => {
+    recordView(id, VIEW_KIND.TOUR);
+  }, [id]);
 
   useEffect(() => {
     let cancelled = false;

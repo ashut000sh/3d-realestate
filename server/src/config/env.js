@@ -11,6 +11,8 @@ export const env = {
   SMTP_PORT: Number(process.env.SMTP_PORT ?? 587),
   SMTP_USER: process.env.SMTP_USER ?? "",
   SMTP_PASS: process.env.SMTP_PASS ?? "",
+  // Optional. Comma-separated Overpass API URLs, tried in order (nearby places on the Listing page)
+  OVERPASS_URLS: process.env.OVERPASS_URLS ?? "",
 };
 
 // Anyone who knows the secret can make login tokens for any account, including admin.
