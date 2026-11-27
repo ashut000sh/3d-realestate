@@ -3,19 +3,23 @@
 // Owner:     M3  (see docs/TEAM.md)
 // Wireframe: 4 Home
 // Job:       Featured listings, quick search bar, buy / rent / short-stay tabs.
+//
+// Design v2 (docs/design): one idea per section. The hero says what Aawas is and lets you search;
+// the photos do the selling. No gradients, no stat boxes, no card-per-feature sections.
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { DISTRICTS, LISTING_TYPE } from "@realestate/shared";
+import { HouseKeys, ScanRoom } from "../../assets/illustrations/index.jsx";
 import Button from "../../components/Button.jsx";
 import EmptyState from "../../components/EmptyState.jsx";
 import Icon from "../../components/Icon.jsx";
 import ListingCard, { ListingCardSkeleton } from "../../components/ListingCard.jsx";
-import { ROUTES, buildRoute } from "../../constants/routes.js";
-import { searchListings } from "../../services/listings.service.js";
-import { formatPrice } from "../../utils/formatPrice.js";
-import { mediaUrl } from "../../utils/mediaUrl.js";
 import Photo from "../../components/Photo.jsx";
+import { ROUTES, buildRoute } from "../../constants/routes.js";
 import { usePageTitle } from "../../hooks/usePageTitle.js";
+import { searchListings } from "../../services/listings.service.js";
+import { LISTING_TYPE_LABEL, formatPrice } from "../../utils/formatPrice.js";
+import { mediaUrl } from "../../utils/mediaUrl.js";
 
 const TABS = [
   { type: LISTING_TYPE.SALE, label: "Buy" },
@@ -25,24 +29,21 @@ const TABS = [
 
 const STEPS = [
   {
-    icon: "scan",
     title: "We scan the home",
     text: "Our team visits with a LiDAR scanner and captures every room to the centimetre.",
   },
   {
-    icon: "cube",
     title: "You walk through it",
     text: "Open the 3D tour in your browser, look around and measure rooms before you visit.",
   },
   {
-    icon: "calendar",
-    title: "Book with confidence",
+    title: "You book with confidence",
     text: "Chat with the seller, then book a viewing or a stay in a couple of taps.",
   },
 ];
 
 const DISTRICT_NOTES = {
-  Kathmandu: "The capital, from Thamel to Budhanilkantha",
+  Kathmandu: "From Thamel to Budhanilkantha",
   Lalitpur: "Patan's heritage lanes and quiet suburbs",
   Bhaktapur: "Newari homes near the old city",
   Kaski: "Lakeside living in Pokhara",
@@ -67,6 +68,30 @@ function useListings(key, filters) {
   return { items: fresh ? state.items : [], error: fresh ? state.error : "", loading: !fresh };
 }
 
+// Text tabs with a short underline for the active one (no filled pills)
+function TypeTabs({ value, onChange, label }) {
+  return (
+    <div role="tablist" aria-label={label} className="flex gap-6 border-b border-border">
+      {TABS.map((t) => (
+        <button
+          key={t.type}
+          type="button"
+          role="tab"
+          aria-selected={value === t.type}
+          onClick={() => onChange(t.type)}
+          className={`-mb-px border-b-2 pb-2.5 text-small font-medium transition-colors ${
+            value === t.type
+              ? "border-primary text-text"
+              : "border-transparent text-muted hover:text-text"
+          }`}
+        >
+          {t.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 export default function Home() {
   const navigate = useNavigate();
   const [q, setQ] = useState("");
@@ -76,8 +101,14 @@ export default function Home() {
 
   const featured = useListings(`tab:${tab}`, { type: tab });
   const all = useListings("all", {});
-  const tours = all.items.filter((listing) => listing.hasTour);
-  const hero = tours.find((l) => l.coverImageUrl) ?? all.items.find((l) => l.coverImageUrl);
+  const hero =
+    all.items.find((l) => l.hasTour && l.coverImageUrl) ?? all.items.find((l) => l.coverImageUrl);
+  const homesIn = (d) => all.items.filter((l) => l.district === d).length;
+  // Whole rows only on a 3-column grid: no lonely last card
+  // The hero home is already shown big above: don't repeat it right below
+  const pool = featured.items.filter((l) => l.id !== hero?.id);
+  const shown =
+    pool.length > 3 ? pool.slice(0, Math.floor(Math.min(6, pool.length) / 3) * 3) : pool;
 
   function handleSearch(event) {
     event.preventDefault();
@@ -92,186 +123,116 @@ export default function Home() {
 
   return (
     <main>
-      {/* ---------- Hero ---------- */}
-      <section className="grain relative overflow-hidden bg-ink text-white">
-        <div className="absolute -top-40 -left-40 h-[36rem] w-[36rem] rounded-full bg-primary/50 blur-3xl" />
-        <div className="absolute right-0 -bottom-40 h-96 w-96 rounded-full bg-accent/15 blur-3xl" />
+      {/* ---------- Hero: what Aawas is, and a way in ---------- */}
+      <section className="mx-auto grid max-w-[75rem] items-center gap-10 px-4 pt-10 pb-16 sm:px-6 lg:grid-cols-[1fr_1.05fr] lg:gap-16 lg:px-8 lg:pt-16 lg:pb-24">
+        <div>
+          <h1 className="font-display text-[2.25rem] leading-[1.08] font-medium tracking-[-0.03em] text-ink sm:text-display">
+            Walk through your next home{" "}
+            <span className="underline decoration-accent decoration-2 underline-offset-[0.18em]">
+              before
+            </span>{" "}
+            you visit.
+          </h1>
+          <p className="mt-5 max-w-md text-body text-muted sm:text-[1.0625rem] sm:leading-7">
+            Homes to buy, rent or stay in across Nepal, each with a true-to-scale 3D tour our own
+            team scanned in person.
+          </p>
 
-        <div className="relative mx-auto grid max-w-7xl items-center gap-12 px-4 pt-14 pb-20 sm:px-6 lg:grid-cols-[1.1fr_1fr] lg:px-8 lg:pt-20 lg:pb-28">
-          <div className="animate-fade-up">
-            <p className="glass inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold">
-              <Icon name="sparkle" className="h-3.5 w-3.5 text-accent" /> Nepal's first 3D property
-              marketplace
-            </p>
-            <h1 className="display mt-6 text-[2.6rem] leading-[1.05] sm:text-6xl lg:text-[4.2rem]">
-              Walk through your next home <em className="text-accent not-italic">before</em> you
-              visit.
-            </h1>
-            <p className="mt-6 max-w-xl text-lg leading-relaxed text-white/70">
-              Buy, rent or book a short stay across Kathmandu, Lalitpur, Pokhara and beyond, with
-              true-to-scale 3D tours captured by our own team.
-            </p>
-
-            {/* Search card */}
-            <form
-              onSubmit={handleSearch}
-              className="mt-9 max-w-2xl rounded-3xl bg-white p-2 text-text shadow-[0_30px_60px_-20px_rgb(0_0_0/0.5)]"
-            >
-              <div className="flex gap-1 p-1" role="tablist" aria-label="What are you looking for">
-                {TABS.map((t) => (
-                  <button
-                    key={t.type}
-                    type="button"
-                    role="tab"
-                    aria-selected={searchType === t.type}
-                    onClick={() => setSearchType(t.type)}
-                    className={`rounded-xl px-4 py-2 text-sm font-semibold transition ${
-                      searchType === t.type
-                        ? "bg-ink text-white"
-                        : "text-muted hover:bg-sand hover:text-ink"
-                    }`}
-                  >
-                    {t.label}
-                  </button>
-                ))}
-              </div>
-              <div className="flex flex-col gap-2 p-1 sm:flex-row">
-                <label className="relative flex-1">
-                  <span className="sr-only">Search</span>
-                  <Icon
-                    name="search"
-                    className="absolute top-1/2 left-4 h-5 w-5 -translate-y-1/2 text-muted"
-                  />
-                  <input
-                    value={q}
-                    onChange={(e) => setQ(e.target.value)}
-                    placeholder="Area or title, e.g. Lakeside, Patan"
-                    className="h-13 w-full rounded-2xl bg-sand/70 pr-4 pl-12 text-[15px] outline-none placeholder:text-muted/80 focus:bg-white focus:ring-2 focus:ring-primary/20"
-                  />
-                </label>
-                <label className="relative sm:w-44">
-                  <span className="sr-only">District</span>
-                  <Icon
-                    name="pin"
-                    className="absolute top-1/2 left-4 h-5 w-5 -translate-y-1/2 text-muted"
-                  />
-                  <select
-                    value={district}
-                    onChange={(e) => setDistrict(e.target.value)}
-                    className="h-13 w-full appearance-none rounded-2xl bg-sand/70 pr-4 pl-12 text-[15px] outline-none focus:bg-white focus:ring-2 focus:ring-primary/20"
-                  >
-                    <option value="">Anywhere</option>
-                    {DISTRICTS.map((d) => (
-                      <option key={d}>{d}</option>
-                    ))}
-                  </select>
-                </label>
-                <Button type="submit" size="lg" className="rounded-2xl">
-                  Search
-                </Button>
-              </div>
-            </form>
-
-            <dl className="mt-10 flex flex-wrap gap-x-10 gap-y-4 text-sm">
-              {[
-                ["5", "districts covered"],
-                ["100%", "homes scanned by our team"],
-                ["cm", "accurate measurements"],
-              ].map(([value, label]) => (
-                <div key={label}>
-                  <dt className="display text-3xl text-white">{value}</dt>
-                  <dd className="text-white/60">{label}</dd>
-                </div>
-              ))}
-            </dl>
-          </div>
-
-          {/* Hero visual */}
-          <div className="relative hidden animate-scale-in lg:block">
-            <div className="relative aspect-[4/5] overflow-hidden rounded-[2rem] bg-primary/30 shadow-[0_40px_80px_-30px_rgb(0_0_0/0.7)] ring-1 ring-white/10">
-              {hero ? (
-                <Photo
-                  src={mediaUrl(hero.coverImageUrl)}
-                  alt={hero.title}
-                  className="h-full w-full object-cover"
+          <form onSubmit={handleSearch} className="mt-8" role="search">
+            <TypeTabs
+              value={searchType}
+              onChange={setSearchType}
+              label="What are you looking for"
+            />
+            <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+              <label className="relative flex-1">
+                <span className="sr-only">Area or title</span>
+                <Icon
+                  name="search"
+                  className="absolute top-1/2 left-3.5 h-4.5 w-4.5 -translate-y-1/2 text-muted"
                 />
-              ) : (
-                <div className="skeleton h-full w-full rounded-none bg-white/5" />
-              )}
-              <div className="absolute inset-0 bg-gradient-to-t from-ink/80 via-transparent to-transparent" />
-              {hero && (
-                <Link
-                  to={buildRoute(ROUTES.LISTING, { id: hero.id })}
-                  className="glass absolute inset-x-5 bottom-5 flex items-center justify-between gap-4 rounded-2xl p-4 transition hover:bg-white/20"
+                <input
+                  value={q}
+                  onChange={(e) => setQ(e.target.value)}
+                  placeholder="Lakeside, Patan, Baluwatar…"
+                  className="field h-12 pl-10"
+                />
+              </label>
+              <label className="sm:w-40">
+                <span className="sr-only">District</span>
+                <select
+                  value={district}
+                  onChange={(e) => setDistrict(e.target.value)}
+                  className="field h-12 appearance-none"
                 >
-                  <div className="min-w-0">
-                    <p className="truncate font-semibold">{hero.title}</p>
-                    <p className="text-sm text-white/70">
-                      {hero.district} · {formatPrice(hero.price, hero.type)}
-                    </p>
-                  </div>
-                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-accent text-ink">
-                    <Icon name="arrowRight" className="h-5 w-5" />
-                  </span>
+                  <option value="">Anywhere</option>
+                  {DISTRICTS.map((d) => (
+                    <option key={d}>{d}</option>
+                  ))}
+                </select>
+              </label>
+              <Button type="submit" size="lg">
+                Search
+              </Button>
+            </div>
+          </form>
+        </div>
+
+        {/* The featured home, large, with a quiet caption under the photo */}
+        <figure className="min-w-0">
+          <Link
+            to={hero ? buildRoute(ROUTES.LISTING, { id: hero.id }) : ROUTES.SEARCH}
+            className="block aspect-[4/3] overflow-hidden rounded-xl bg-sand lg:aspect-[5/4]"
+            aria-label={hero ? `${hero.title}, view this home` : "Explore homes"}
+          >
+            {hero && (
+              <Photo
+                src={mediaUrl(hero.coverImageUrl)}
+                alt={hero.title}
+                fetchPriority="high"
+                className="h-full w-full object-cover"
+              />
+            )}
+          </Link>
+          {hero && (
+            <figcaption className="mt-3 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 text-small">
+              <span className="text-muted">
+                <span className="font-medium text-text">{hero.title}</span> · {hero.district} ·{" "}
+                {formatPrice(hero.price, hero.type)}
+              </span>
+              {hero.hasTour && (
+                <Link
+                  to={buildRoute(ROUTES.TOUR, { id: hero.id })}
+                  className="inline-flex items-center gap-1 font-medium text-primary hover:gap-1.5"
+                >
+                  Open its 3D tour
+                  <Icon name="arrowRight" className="h-4 w-4 transition-all" />
                 </Link>
               )}
-            </div>
-            {/* Floating chips */}
-            <div className="absolute top-10 -left-10 flex items-center gap-3 rounded-2xl bg-white p-3 pr-5 text-ink shadow-[var(--shadow-lift)]">
-              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-soft text-primary">
-                <Icon name="cube" className="h-5 w-5" />
-              </span>
-              <div>
-                <p className="text-sm font-semibold">Live 3D tour</p>
-                <p className="text-xs text-muted">Drag to look around</p>
-              </div>
-            </div>
-            <div className="absolute -right-6 bottom-28 flex items-center gap-2 rounded-2xl bg-accent px-4 py-3 text-sm font-semibold text-ink shadow-[var(--shadow-lift)]">
-              <Icon name="ruler" className="h-4 w-4" /> 4.82 m
-            </div>
-          </div>
-        </div>
+            </figcaption>
+          )}
+        </figure>
       </section>
 
-      {/* ---------- Listings by type ---------- */}
-      <section className="page">
-        <div className="flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <p className="eyebrow">Fresh on Aawas</p>
-            <h2 className="page-title mt-2">Homes worth a closer look</h2>
-          </div>
-          <div className="flex items-center gap-3">
-            <div
-              role="tablist"
-              aria-label="Listing type"
-              className="flex gap-1 rounded-2xl border border-border bg-surface p-1"
-            >
-              {TABS.map((t) => (
-                <button
-                  key={t.type}
-                  role="tab"
-                  aria-selected={tab === t.type}
-                  onClick={() => setTab(t.type)}
-                  className={`rounded-xl px-4 py-2 text-sm font-semibold transition ${
-                    tab === t.type ? "bg-primary text-white shadow-sm" : "text-muted hover:text-ink"
-                  }`}
-                >
-                  {t.label}
-                </button>
-              ))}
-            </div>
-            <Link
-              to={`${ROUTES.SEARCH}?type=${tab}`}
-              className="hidden items-center gap-1 text-sm font-semibold text-primary hover:gap-2 sm:flex"
-            >
-              See all <Icon name="arrowRight" className="h-4 w-4 transition-all" />
-            </Link>
-          </div>
+      {/* ---------- Featured homes ---------- */}
+      <section className="mx-auto max-w-[75rem] px-4 pb-24 sm:px-6 lg:px-8">
+        <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-4">
+          <h2 className="page-title">Homes worth a closer look</h2>
+          <Link
+            to={`${ROUTES.SEARCH}?type=${tab}`}
+            className="inline-flex items-center gap-1 text-small font-medium text-primary hover:gap-1.5"
+          >
+            See all {LISTING_TYPE_LABEL[tab]?.toLowerCase()}
+            <Icon name="arrowRight" className="h-4 w-4 transition-all" />
+          </Link>
+        </div>
+        <div className="mt-6 max-w-sm">
+          <TypeTabs value={tab} onChange={setTab} label="Listing type" />
         </div>
 
         <div className="mt-8">
           {featured.loading ? (
-            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-3">
               {[0, 1, 2].map((i) => (
                 <ListingCardSkeleton key={i} />
               ))}
@@ -283,15 +244,15 @@ export default function Home() {
               title="Couldn't load listings"
               text={featured.error}
             />
-          ) : featured.items.length === 0 ? (
+          ) : shown.length === 0 ? (
             <EmptyState
               icon="home"
               title="No listings here yet"
               text="Try another tab, or check back soon."
             />
           ) : (
-            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              {featured.items.slice(0, 6).map((listing) => (
+            <div className="grid gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-3">
+              {shown.map((listing) => (
                 <ListingCard key={listing.id} listing={listing} />
               ))}
             </div>
@@ -300,119 +261,67 @@ export default function Home() {
       </section>
 
       {/* ---------- How it works ---------- */}
-      <section className="bg-sand/60">
-        <div className="page py-20">
-          <div className="max-w-2xl">
-            <p className="eyebrow">How Aawas works</p>
-            <h2 className="page-title mt-2">From our scanner to your screen</h2>
+      <section className="border-y border-border">
+        <div className="mx-auto grid max-w-[75rem] items-center gap-12 px-4 py-20 sm:px-6 lg:grid-cols-[0.9fr_1.1fr] lg:gap-20 lg:px-8 lg:py-24">
+          <div>
+            <h2 className="page-title max-w-sm">From our scanner to your screen</h2>
+            <ScanRoom className="mt-10 w-full max-w-sm" />
           </div>
-          <ol className="mt-12 grid gap-6 md:grid-cols-3">
+          <ol className="divide-y divide-border">
             {STEPS.map((step, i) => (
-              <li key={step.title} className="card relative overflow-hidden p-7">
-                <span className="display absolute -top-4 right-4 text-8xl text-sand">{i + 1}</span>
-                <span className="relative flex h-12 w-12 items-center justify-center rounded-2xl bg-ink text-accent">
-                  <Icon name={step.icon} className="h-6 w-6" />
+              <li key={step.title} className="grid grid-cols-[2.5rem_1fr] gap-4 py-6 first:pt-0">
+                <span className="font-display text-heading text-accent-ink tabular-nums">
+                  {String(i + 1).padStart(2, "0")}
                 </span>
-                <h3 className="relative mt-6 text-lg font-semibold text-ink">{step.title}</h3>
-                <p className="relative mt-2 leading-relaxed text-muted">{step.text}</p>
+                <div>
+                  <h3 className="text-heading font-semibold text-text">{step.title}</h3>
+                  <p className="mt-1.5 max-w-md text-body text-muted">{step.text}</p>
+                </div>
               </li>
             ))}
           </ol>
         </div>
       </section>
 
-      {/* ---------- 3D tours ---------- */}
-      {tours.length > 0 && (
-        <section className="page py-20">
-          <div className="flex flex-wrap items-end justify-between gap-4">
-            <div>
-              <p className="eyebrow">Ready to explore</p>
-              <h2 className="page-title mt-2">Step inside in 3D</h2>
-            </div>
-            <Button to={ROUTES.SEARCH} variant="secondary">
-              Explore all homes
-            </Button>
-          </div>
-          <div className="mt-8 grid gap-6 md:grid-cols-2">
-            {tours.slice(0, 2).map((listing) => (
-              <Link
-                key={listing.id}
-                to={buildRoute(ROUTES.TOUR, { id: listing.id })}
-                className="group relative block aspect-[16/10] overflow-hidden rounded-[28px] bg-ink"
-              >
-                {listing.coverImageUrl && (
-                  <Photo
-                    src={mediaUrl(listing.coverImageUrl)}
-                    alt={listing.title}
-                    loading="lazy"
-                    className="h-full w-full object-cover opacity-80 transition duration-700 group-hover:scale-105 group-hover:opacity-60"
-                  />
-                )}
-                <div className="absolute inset-0 bg-gradient-to-t from-ink via-ink/20 to-transparent" />
-                <span className="absolute top-1/2 left-1/2 flex h-16 w-16 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-ink shadow-xl transition group-hover:scale-110">
-                  <Icon name="play" className="ml-1 h-6 w-6" />
-                </span>
-                <div className="absolute inset-x-6 bottom-6 text-white">
-                  <p className="flex items-center gap-1.5 text-xs font-semibold tracking-wider text-accent uppercase">
-                    <Icon name="cube" className="h-3.5 w-3.5" /> 3D tour
-                  </p>
-                  <p className="display mt-1 text-2xl">{listing.title}</p>
-                  <p className="text-sm text-white/70">
-                    {listing.district} · {formatPrice(listing.price, listing.type)}
-                  </p>
-                </div>
-              </Link>
-            ))}
-          </div>
-        </section>
-      )}
-
       {/* ---------- Districts ---------- */}
-      <section className="page pt-0">
-        <p className="eyebrow">Browse by place</p>
-        <h2 className="page-title mt-2">Where do you want to live?</h2>
-        <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+      <section className="mx-auto max-w-[75rem] px-4 py-24 sm:px-6 lg:px-8">
+        <h2 className="page-title">Where do you want to live?</h2>
+        <ul className="mt-8 grid border-t border-border sm:grid-cols-2 lg:grid-cols-5">
           {DISTRICTS.map((d) => (
-            <Link
-              key={d}
-              to={`${ROUTES.SEARCH}?district=${d}`}
-              className="card card-hover group flex flex-col justify-between gap-6 p-5"
-            >
-              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-soft text-primary transition group-hover:bg-primary group-hover:text-white">
-                <Icon name="pin" className="h-5 w-5" />
-              </span>
-              <span>
-                <span className="block text-lg font-semibold text-ink">{d}</span>
-                <span className="mt-1 block text-sm leading-snug text-muted">
-                  {DISTRICT_NOTES[d]}
+            <li key={d} className="border-b border-border lg:border-r lg:last:border-r-0">
+              <Link
+                to={`${ROUTES.SEARCH}?district=${d}`}
+                className="group flex h-full flex-col gap-1 py-5 transition-colors lg:px-5 lg:first:pl-0"
+              >
+                <span className="font-display text-heading text-ink group-hover:text-primary">
+                  {d}
                 </span>
-              </span>
-            </Link>
+                <span className="text-small text-muted">{DISTRICT_NOTES[d]}</span>
+                {!all.loading && (
+                  <span className="mt-2 text-small font-medium text-text tabular-nums">
+                    {homesIn(d)} {homesIn(d) === 1 ? "home" : "homes"}
+                  </span>
+                )}
+              </Link>
+            </li>
           ))}
-        </div>
+        </ul>
       </section>
 
-      {/* ---------- Seller CTA ---------- */}
-      <section className="page pt-6">
-        <div className="grain relative overflow-hidden rounded-[32px] bg-primary px-6 py-12 text-white sm:px-12 sm:py-16">
-          <div className="absolute -right-24 -bottom-24 h-80 w-80 rounded-full bg-accent/30 blur-3xl" />
-          <div className="relative grid items-center gap-8 lg:grid-cols-[1.4fr_1fr]">
-            <div>
-              <p className="eyebrow text-accent">For owners</p>
-              <h2 className="display mt-3 text-3xl leading-tight sm:text-4xl">
-                List your property free. We'll scan it and make the 3D tour.
-              </h2>
-              <p className="mt-4 max-w-xl text-white/75">
-                Homes with a 3D tour get serious buyers, fewer wasted viewings and a listing that
-                stands out.
-              </p>
-            </div>
-            <div className="flex flex-wrap gap-3 lg:justify-end">
-              <Button to={ROUTES.SCAN_REQUEST} variant="gold" size="lg">
-                List your property <Icon name="arrowRight" className="h-4 w-4" />
-              </Button>
-            </div>
+      {/* ---------- For owners ---------- */}
+      <section className="mx-auto max-w-[75rem] px-4 sm:px-6 lg:px-8">
+        <div className="grid items-center gap-8 border-t border-border pt-16 md:grid-cols-[1fr_auto] md:gap-16">
+          <div className="max-w-xl">
+            <h2 className="page-title">List your property free. We'll scan it for you.</h2>
+            <p className="mt-4 text-body text-muted">
+              Homes with a 3D tour get serious buyers and fewer wasted viewings. Our team visits,
+              scans every room and publishes the tour with your listing.
+            </p>
+            <Button to={ROUTES.SCAN_REQUEST} size="lg" className="mt-8">
+              List your property
+            </Button>
           </div>
+          <HouseKeys className="w-56 md:w-72" />
         </div>
       </section>
     </main>

@@ -207,6 +207,11 @@
   }
 }
 
+/* Line-art illustrations (assets/illustrations): a constant 1.5px line at any size */
+.illustration * {
+  vector-effect: non-scaling-stroke;
+}
+
 /* Leaflet: match the map controls and popups to the brand */
 .leaflet-container {
   font-family: var(--font-sans);
