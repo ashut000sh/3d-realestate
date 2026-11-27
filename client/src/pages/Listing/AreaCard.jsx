@@ -101,8 +101,10 @@ export default function AreaCard({ areaSqft, district, floors = 1 }) {
   const levels = Array.from({ length: Math.max(1, Math.min(10, floors || 1)) }, (_, i) => i + 1);
 
   return (
-    <section ref={cardRef} aria-label="Area" className="card overflow-hidden p-6 sm:p-7">
-      <p className="eyebrow">Area</p>
+    <section ref={cardRef} aria-labelledby="area-title" className="overflow-hidden">
+      <h2 id="area-title" className="font-display text-heading font-medium text-ink">
+        Area
+      </h2>
 
       <div className="mt-3 flex flex-wrap items-end gap-x-6 gap-y-5">
         <div className="min-w-0">
@@ -124,7 +126,7 @@ export default function AreaCard({ areaSqft, district, floors = 1 }) {
             className="mt-2 block h-[3px] rounded-full bg-accent transition-[width] duration-500 ease-out"
             style={{ width: done ? "3.5rem" : 0 }}
           />
-          <p aria-hidden="true" className="mt-3 font-semibold text-accent-dark">
+          <p aria-hidden="true" className="mt-3 font-semibold text-accent-ink">
             ≈ {formatLocalArea(areaSqft, district)}
             <span className="ml-2 text-xs font-medium text-muted">
               {terai ? "bigha-kattha-dhur" : "ropani-aana"}

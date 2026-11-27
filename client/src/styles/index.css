@@ -106,6 +106,18 @@
       transform: none;
     }
   }
+  /* Save heart: a quick, small pop when you save (SaveButton) */
+  @keyframes heart-pop {
+    0% {
+      transform: scale(1);
+    }
+    45% {
+      transform: scale(1.28);
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
   @keyframes shimmer {
     from {
       background-position: -400px 0;

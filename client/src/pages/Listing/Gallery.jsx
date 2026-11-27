@@ -30,7 +30,7 @@ function Lightbox({ images, title, start, onClose }) {
 
   return (
     <div
-      className="fixed inset-0 z-[2000] flex animate-fade-in flex-col bg-ink/95 backdrop-blur"
+      className="fixed inset-0 z-[2000] flex animate-fade-in flex-col bg-ink/95"
       role="dialog"
       aria-modal="true"
       aria-label={`${title} photos`}
@@ -52,7 +52,7 @@ function Lightbox({ images, title, start, onClose }) {
           key={index}
           src={mediaUrl(images[index])}
           alt={`${title}, photo ${index + 1} of ${images.length}`}
-          className="max-h-[75vh] max-w-full animate-scale-in rounded-2xl object-contain shadow-2xl"
+          className="max-h-[75vh] max-w-full rounded-xl object-contain"
         />
         {images.length > 1 && (
           <>
@@ -97,7 +97,7 @@ export default function Gallery({ images, title, badge }) {
 
   if (!images || images.length === 0) {
     return (
-      <div className="flex aspect-[16/9] flex-col items-center justify-center gap-2 rounded-[28px] bg-sand text-muted">
+      <div className="flex aspect-[16/9] flex-col items-center justify-center gap-2 rounded-xl bg-sand text-muted">
         <Icon name="image" className="h-10 w-10 text-border" />
         No photos yet
       </div>
@@ -110,7 +110,7 @@ export default function Gallery({ images, title, badge }) {
   return (
     <>
       {/* Phones and tablets: one photo with arrows */}
-      <div className="relative aspect-[4/3] overflow-hidden rounded-[24px] bg-sand md:hidden">
+      <div className="relative aspect-[4/3] overflow-hidden rounded-xl bg-sand md:hidden">
         <button className="h-full w-full" onClick={() => setOpen(index)} aria-label="Open photos">
           <Photo
             src={mediaUrl(images[index])}
@@ -125,7 +125,7 @@ export default function Gallery({ images, title, badge }) {
               type="button"
               onClick={() => go(-1)}
               aria-label="Previous photo"
-              className="absolute top-1/2 left-3 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 shadow"
+              className="absolute top-1/2 left-3 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/95 shadow-[var(--shadow-float)]"
             >
               <Icon name="chevronLeft" className="h-5 w-5" />
             </button>
@@ -133,11 +133,11 @@ export default function Gallery({ images, title, badge }) {
               type="button"
               onClick={() => go(1)}
               aria-label="Next photo"
-              className="absolute top-1/2 right-3 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 shadow"
+              className="absolute top-1/2 right-3 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/95 shadow-[var(--shadow-float)]"
             >
               <Icon name="chevronRight" className="h-5 w-5" />
             </button>
-            <span className="absolute right-3 bottom-3 rounded-full bg-ink/75 px-2.5 py-1 text-xs font-medium text-white">
+            <span className="absolute right-3 bottom-3 rounded-full bg-ink/80 px-2.5 py-1 text-label font-medium text-white tabular-nums">
               {index + 1} / {images.length}
             </span>
           </>
@@ -150,14 +150,14 @@ export default function Gallery({ images, title, badge }) {
       >
         <button
           onClick={() => setOpen(0)}
-          className="group relative h-full min-h-0 overflow-hidden rounded-l-[28px] bg-sand"
-          style={images.length === 1 ? { borderRadius: 28 } : undefined}
+          className="group relative h-full min-h-0 overflow-hidden rounded-l-xl bg-sand"
+          style={images.length === 1 ? { borderRadius: 12 } : undefined}
           aria-label="Open photo 1"
         >
           <Photo
             src={mediaUrl(images[0])}
             alt={title}
-            className="absolute inset-0 h-full w-full object-cover transition duration-700 group-hover:scale-[1.03]"
+            className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 ease-[var(--ease-out)] group-hover:scale-[1.02]"
           />
         </button>
         {images.length > 1 && (
@@ -166,13 +166,13 @@ export default function Gallery({ images, title, badge }) {
               <button
                 key={url}
                 onClick={() => setOpen(i + 1)}
-                className={`group relative min-h-0 overflow-hidden bg-sand ${i === 0 ? "rounded-tr-[28px]" : "rounded-br-[28px]"} ${images.length === 2 ? "row-span-2 rounded-r-[28px]" : ""}`}
+                className={`group relative min-h-0 overflow-hidden bg-sand ${i === 0 ? "rounded-tr-xl" : "rounded-br-xl"} ${images.length === 2 ? "row-span-2 rounded-r-xl" : ""}`}
                 aria-label={`Open photo ${i + 2}`}
               >
                 <Photo
                   src={mediaUrl(url)}
                   alt=""
-                  className="absolute inset-0 h-full w-full object-cover transition duration-700 group-hover:scale-[1.03]"
+                  className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 ease-[var(--ease-out)] group-hover:scale-[1.02]"
                 />
               </button>
             ))}
@@ -181,7 +181,7 @@ export default function Gallery({ images, title, badge }) {
         {badge}
         <button
           onClick={() => setOpen(0)}
-          className="absolute right-4 bottom-4 flex items-center gap-2 rounded-xl bg-white/95 px-4 py-2 text-sm font-semibold text-ink shadow-[var(--shadow-lift)] hover:bg-white"
+          className="absolute right-4 bottom-4 flex h-10 items-center gap-2 rounded-lg bg-white/95 px-3.5 text-small font-medium text-ink shadow-[var(--shadow-float)] hover:bg-white"
         >
           <Icon name="grid" className="h-4 w-4" /> Show all {images.length} photos
         </button>

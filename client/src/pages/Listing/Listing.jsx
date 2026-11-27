@@ -135,241 +135,145 @@ export default function Listing() {
   const isOwner = Boolean(user && listing.seller && user.id === listing.seller.id);
   const hasLocation = typeof listing.lat === "number" && typeof listing.lng === "number";
   const facts = [
-    listing.bedrooms !== null && { icon: "bed", label: "Bedrooms", value: listing.bedrooms },
-    listing.bathrooms !== null && { icon: "bath", label: "Bathrooms", value: listing.bathrooms },
-    { icon: "layers", label: listing.floors === 1 ? "Floor" : "Floors", value: listing.floors },
-    { icon: "home", label: "Type", value: LISTING_TYPE_LABEL[listing.type] ?? listing.type },
-  ].filter(Boolean);
-
-  const tourBadge = listing.tourUrl && (
-    <Link
-      to={buildRoute(ROUTES.TOUR, { id: listing.id })}
-      className="absolute top-4 left-4 z-10 flex items-center gap-2 rounded-full bg-ink/90 py-2 pr-4 pl-2 text-sm font-semibold text-white shadow-[var(--shadow-lift)] backdrop-blur transition hover:bg-ink"
-    >
-      <span className="flex h-7 w-7 items-center justify-center rounded-full bg-accent text-ink">
-        <Icon name="cube" className="h-4 w-4" />
-      </span>
-      Open 3D tour
-    </Link>
-  );
+    listing.bedrooms !== null && { label: "Bedrooms", value: listing.bedrooms },
+    listing.bathrooms !== null && { label: "Bathrooms", value: listing.bathrooms },
+    { label: listing.floors === 1 ? "Floor" : "Floors", value: listing.floors },
+  ].filter(Boolean); // (the type is the chip under the title)
+  const tourUrl = buildRoute(ROUTES.TOUR, { id: listing.id });
+  const quietAction =
+    "flex h-11 items-center gap-2 rounded-lg px-2 text-small font-medium text-text transition-colors hover:bg-sand/70 disabled:opacity-60";
 
   return (
     <main className="page pt-6">
-      <nav className="flex items-center gap-2 text-sm text-muted" aria-label="Breadcrumb">
-        <Link to={ROUTES.SEARCH} className="flex items-center gap-1 hover:text-primary">
-          <Icon name="arrowLeft" className="h-4 w-4" /> Explore
+      <nav className="flex items-center gap-2 text-small text-muted" aria-label="Breadcrumb">
+        <Link to={ROUTES.SEARCH} className="hover:text-primary">
+          Explore
         </Link>
-        <span>/</span>
+        <span aria-hidden="true">/</span>
         <Link to={`${ROUTES.SEARCH}?district=${listing.district}`} className="hover:text-primary">
           {listing.district}
         </Link>
       </nav>
 
       <div className="mt-4">
-        <Gallery images={listing.images} title={listing.title} badge={tourBadge} />
+        <Gallery images={listing.images} title={listing.title} />
       </div>
 
-      <div className="mt-10 grid gap-10 lg:grid-cols-[1fr_380px]">
-        {/* Left: details */}
-        <div className="min-w-0 space-y-10">
-          <header>
-            <div className="flex flex-wrap items-center gap-2">
-              <Badge tone="primary">{LISTING_TYPE_LABEL[listing.type] ?? listing.type}</Badge>
-              {listing.tourUrl ? (
-                <Badge tone="gold">
-                  <Icon name="cube" className="h-3.5 w-3.5" /> 3D tour available
-                </Badge>
-              ) : (
-                <Badge>3D tour coming soon</Badge>
-              )}
-              <TrustBadges
-                tourVerified={listing.tourVerified}
-                sellerVerified={listing.sellerVerified}
-                size="md"
-              />
-            </div>
-            <h1 className="display mt-4 text-3xl leading-tight text-ink sm:text-[2.6rem]">
-              {listing.title}
-            </h1>
-            <p className="mt-2 flex items-center gap-1.5 text-muted">
-              <Icon name="pin" className="h-4 w-4" />
-              {[listing.address, listing.district].filter(Boolean).join(", ")}
-            </p>
-          </header>
-
-          <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            {facts.map((fact) => (
-              <div key={fact.label} className="rounded-2xl bg-surface p-4 ring-1 ring-border">
-                <Icon name={fact.icon} className="h-5 w-5 text-accent-dark" />
-                <dd className="mt-3 text-lg font-semibold text-ink">{fact.value}</dd>
-                <dt className="text-sm text-muted">{fact.label}</dt>
-              </div>
-            ))}
-          </dl>
-
-          {listing.areaSqft > 0 && (
-            <AreaCard
-              areaSqft={listing.areaSqft}
-              district={listing.district}
-              floors={listing.floors}
-            />
-          )}
-
-          {listing.description && (
-            <section>
-              <h2 className="display text-2xl text-ink">About this home</h2>
-              <p className="mt-3 text-[17px] leading-relaxed whitespace-pre-line text-text/85">
-                {listing.description}
-              </p>
-            </section>
-          )}
-
-          {listing.tourUrl && (
-            <Link
-              to={buildRoute(ROUTES.TOUR, { id: listing.id })}
-              className="grain group relative flex items-center gap-6 overflow-hidden rounded-[24px] bg-ink p-6 text-white sm:p-8"
-            >
-              <div className="absolute -right-16 -bottom-20 h-64 w-64 rounded-full bg-primary/60 blur-3xl" />
-              <span className="relative flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-accent text-ink transition group-hover:scale-105">
-                <Icon name="cube" className="h-8 w-8" />
-              </span>
-              <span className="relative">
-                <span className="display block text-2xl">Walk through it in 3D</span>
-                <span className="mt-1 block text-white/70">
-                  Look around every room and measure walls, right in your browser.
-                </span>
-              </span>
-              <Icon
-                name="arrowRight"
-                className="relative ml-auto hidden h-6 w-6 text-accent transition group-hover:translate-x-1 sm:block"
-              />
-            </Link>
-          )}
-
-          {hasLocation && (
-            <NearbySection
-              key={listing.id}
-              listingId={listing.id}
-              lat={listing.lat}
-              lng={listing.lng}
-              district={listing.district}
-            />
-          )}
+      {/* Title block, full width */}
+      <header className="mt-8 max-w-3xl">
+        <h1 className="font-display text-[2rem] leading-[1.12] font-medium tracking-[-0.03em] text-ink sm:text-display">
+          {listing.title}
+        </h1>
+        <p className="mt-2 text-body text-muted">
+          {[listing.address, listing.district].filter(Boolean).join(", ")}
+        </p>
+        <div className="mt-4 flex flex-wrap items-center gap-2">
+          <Badge tone="primary">{LISTING_TYPE_LABEL[listing.type] ?? listing.type}</Badge>
+          <TrustBadges
+            tourVerified={listing.tourVerified}
+            sellerVerified={listing.sellerVerified}
+          />
         </div>
+      </header>
 
-        {/* Right: price and actions (sticks while scrolling on laptop) */}
-        <aside className="lg:sticky lg:top-24 lg:self-start">
-          <div className="card space-y-5 p-6">
-            <div>
-              <p className="text-sm text-muted">
-                {isStay
-                  ? "Per night"
-                  : listing.type === LISTING_TYPE.RENT
-                    ? "Per month"
-                    : "Asking price"}
-              </p>
-              <p className="display mt-1 text-3xl text-ink">{formatPrice(listing.price)}</p>
-            </div>
+      <div className="mt-10 grid gap-12 lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-16">
+        {/* Price and actions: right column on laptops, straight after the title on phones */}
+        <aside className="lg:sticky lg:top-24 lg:order-last lg:self-start">
+          <div className="rounded-2xl border border-border bg-surface p-6">
+            <p className="text-small text-muted">
+              {isStay
+                ? "Per night"
+                : listing.type === LISTING_TYPE.RENT
+                  ? "Per month"
+                  : "Asking price"}
+            </p>
+            <p className="mt-1 font-display text-title text-ink tabular-nums">
+              {formatPrice(listing.price)}
+            </p>
 
-            <div className="space-y-2.5">
+            <div className="mt-6 space-y-2.5">
               {listing.tourUrl ? (
-                <Button
-                  to={buildRoute(ROUTES.TOUR, { id: listing.id })}
-                  size="lg"
-                  className="w-full"
-                >
+                <Button to={tourUrl} size="lg" className="w-full">
                   <Icon name="cube" className="h-5 w-5" /> Open 3D tour
                 </Button>
               ) : (
-                <Button disabled size="lg" variant="secondary" className="w-full">
-                  <Icon name="clock" className="h-5 w-5" /> Tour coming soon
-                </Button>
+                <p className="rounded-lg bg-sand px-4 py-3 text-center text-small text-muted">
+                  3D tour coming soon: our team hasn&apos;t scanned this home yet.
+                </p>
               )}
               {isOwner ? (
                 <>
-                  <Button to={ROUTES.MY_LISTINGS} variant="gold" size="lg" className="w-full">
-                    <Icon name="key" className="h-5 w-5" /> Manage in My listings
+                  <Button to={ROUTES.MY_LISTINGS} variant="secondary" size="lg" className="w-full">
+                    Manage in My listings
                   </Button>
-                  <p className="text-center text-sm text-muted">
-                    This is your listing. Buyers see "Book" and "Chat" here.
+                  <p className="text-center text-small text-muted">
+                    This is your listing. Buyers see &ldquo;Book&rdquo; and &ldquo;Chat&rdquo; here.
                   </p>
                 </>
               ) : (
-                <>
-                  <Button
-                    to={buildRoute(ROUTES.BOOKING, { id: listing.id })}
-                    variant="gold"
-                    size="lg"
-                    className="w-full"
-                  >
-                    <Icon name="calendar" className="h-5 w-5" />{" "}
-                    {isStay ? "Book a stay" : "Book a viewing"}
-                  </Button>
-                  <Button
-                    variant="secondary"
-                    size="lg"
-                    className="w-full"
-                    onClick={handleChat}
-                    loading={chatBusy}
-                  >
-                    <Icon name="chat" className="h-5 w-5" />{" "}
-                    {chatBusy ? "Opening chat..." : "Chat with seller"}
-                  </Button>
-                  {listing.status === LISTING_STATUS.LIVE && (
-                    <SaveButton listingId={listing.id} variant="labelled" className="w-full" />
-                  )}
-                </>
+                <Button
+                  to={buildRoute(ROUTES.BOOKING, { id: listing.id })}
+                  variant="secondary"
+                  size="lg"
+                  className="w-full"
+                >
+                  {isStay ? "Book a stay" : "Book a viewing"}
+                </Button>
               )}
             </div>
 
-            {/* Share: buyers send it to family, sellers to their contacts. Live listings only,
-                because the preview page (/share/...) only shows live homes. */}
-            {listing.status === LISTING_STATUS.LIVE ? (
-              <ShareButton
-                url={shareLink(listing.id)}
-                text={shareText(listing)}
-                title={listing.title}
-              />
-            ) : (
-              isOwner && (
-                <p className="text-center text-xs text-muted">
-                  You can share this listing once it's live.
-                </p>
-              )
-            )}
-
-            {inCompare ? (
-              <Link
-                to={ROUTES.COMPARE}
-                className="flex items-center justify-center gap-2 rounded-xl bg-success-soft px-4 py-2.5 text-sm font-semibold text-success"
-              >
-                <Icon name="check" className="h-4 w-4" /> Added to compare. View comparison
-              </Link>
-            ) : (
-              <button
-                type="button"
-                onClick={handleCompare}
-                className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-border px-4 py-2.5 text-sm font-semibold text-primary transition hover:border-primary hover:bg-primary-soft/50"
-              >
-                <Icon name="plus" className="h-4 w-4" /> Add to compare
-              </button>
+            {/* Everything else is quiet: one row of small actions */}
+            <div className="mt-4 grid grid-cols-2 gap-x-2 border-t border-border pt-3">
+              {!isOwner && (
+                <button
+                  type="button"
+                  onClick={handleChat}
+                  disabled={chatBusy}
+                  className={quietAction}
+                >
+                  <Icon name="chat" className="h-4.5 w-4.5" />
+                  {chatBusy ? "Opening…" : "Chat with seller"}
+                </button>
+              )}
+              {!isOwner && listing.status === LISTING_STATUS.LIVE && (
+                <SaveButton listingId={listing.id} variant="quiet" />
+              )}
+              {listing.status === LISTING_STATUS.LIVE && (
+                <ShareButton
+                  variant="quiet"
+                  url={shareLink(listing.id)}
+                  text={shareText(listing)}
+                  title={listing.title}
+                />
+              )}
+              {inCompare ? (
+                <Link to={ROUTES.COMPARE} className={`${quietAction} text-primary`}>
+                  <Icon name="check" className="h-4.5 w-4.5" /> In compare
+                </Link>
+              ) : (
+                <button type="button" onClick={handleCompare} className={quietAction}>
+                  <Icon name="compare" className="h-4.5 w-4.5" /> Compare
+                </button>
+              )}
+            </div>
+            {isOwner && listing.status !== LISTING_STATUS.LIVE && (
+              <p className="mt-2 text-small text-muted">
+                You can share this listing once it&apos;s live.
+              </p>
             )}
 
             {notice && (
-              <p
-                className="flex items-start gap-2 rounded-xl bg-warning-soft px-3 py-2.5 text-sm text-warning"
-                role="alert"
-              >
+              <p className="mt-3 flex items-start gap-2 text-small text-warning" role="alert">
                 <Icon name="info" className="mt-0.5 h-4 w-4" /> {notice}
               </p>
             )}
 
             {listing.seller && (
-              <div className="flex items-start gap-3 border-t border-border pt-5">
+              <div className="mt-4 flex items-start gap-3 border-t border-border pt-5">
                 <Avatar name={listing.seller.fullName} />
                 <div className="min-w-0">
-                  <p className="text-xs text-muted">Listed by</p>
-                  <p className="font-semibold text-ink">{listing.seller.fullName}</p>
+                  <p className="text-small text-muted">Listed by</p>
+                  <p className="font-medium text-text">{listing.seller.fullName}</p>
                   {(listing.seller.verified || listing.seller.emailVerified) && (
                     <div className="mt-2 flex flex-wrap gap-1.5">
                       {listing.seller.verified && (
@@ -385,6 +289,50 @@ export default function Listing() {
             )}
           </div>
         </aside>
+
+        {/* Details, set like a brochure: hairlines, not boxes */}
+        <div className="min-w-0 space-y-14">
+          <dl className="grid grid-cols-3 border-y border-border">
+            {facts.map((fact, i) => (
+              <div
+                key={fact.label}
+                className={`py-5 ${i > 0 ? "border-l border-border pl-5" : ""}`}
+              >
+                <dt className="text-small text-muted">{fact.label}</dt>
+                <dd className="mt-1 text-heading font-semibold text-text tabular-nums">
+                  {fact.value}
+                </dd>
+              </div>
+            ))}
+          </dl>
+
+          {listing.areaSqft > 0 && (
+            <AreaCard
+              areaSqft={listing.areaSqft}
+              district={listing.district}
+              floors={listing.floors}
+            />
+          )}
+
+          {listing.description && (
+            <section>
+              <h2 className="font-display text-heading font-medium text-ink">About this home</h2>
+              <p className="mt-3 max-w-[68ch] text-[1.0625rem] leading-7 whitespace-pre-line text-text">
+                {listing.description}
+              </p>
+            </section>
+          )}
+
+          {hasLocation && (
+            <NearbySection
+              key={listing.id}
+              listingId={listing.id}
+              lat={listing.lat}
+              lng={listing.lng}
+              district={listing.district}
+            />
+          )}
+        </div>
       </div>
     </main>
   );

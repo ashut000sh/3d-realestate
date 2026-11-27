@@ -33,8 +33,9 @@ async function copyText(value) {
 
 const VARIANTS = {
   labelled:
-    "h-11 w-full gap-2 rounded-xl border border-border bg-surface px-4 text-[15px] text-text hover:border-muted/40 hover:bg-sand/60",
-  glass: "glass h-11 gap-2 rounded-2xl px-4 text-sm text-white hover:bg-white/20",
+    "h-11 w-full gap-2 rounded-lg border border-border bg-surface px-4 text-small text-text hover:border-muted/50 hover:bg-sand/50",
+  quiet: "h-11 w-full justify-start gap-2 rounded-lg px-2 text-small text-text hover:bg-sand/70",
+  glass: "glass h-11 gap-2 rounded-xl px-4 text-small text-white hover:bg-white/10",
 };
 
 export default function ShareButton({ url, text, title, variant = "labelled", className = "" }) {
@@ -107,7 +108,7 @@ export default function ShareButton({ url, text, title, variant = "labelled", cl
         onClick={handleClick}
         aria-haspopup="menu"
         aria-expanded={open}
-        className={`inline-flex items-center justify-center font-semibold transition active:scale-[0.98] ${VARIANTS[variant]}`}
+        className={`inline-flex items-center justify-center font-medium transition-colors ${VARIANTS[variant]}`}
       >
         <Icon name={copied ? "check" : "share"} className="h-4.5 w-4.5" />
         {copied ? "Copied!" : "Share"}
@@ -117,7 +118,7 @@ export default function ShareButton({ url, text, title, variant = "labelled", cl
         <div
           role="menu"
           aria-label="Share this home"
-          className="absolute right-0 z-40 mt-2 w-60 animate-scale-in rounded-2xl border border-border bg-surface p-1.5 text-text shadow-[var(--shadow-lift)]"
+          className={`absolute ${variant === "quiet" ? "left-0" : "right-0"} z-40 mt-2 w-60 animate-scale-in rounded-xl border border-border bg-surface p-1.5 text-text shadow-[var(--shadow-float)]`}
         >
           {targets.map((t) => (
             <a
@@ -127,7 +128,7 @@ export default function ShareButton({ url, text, title, variant = "labelled", cl
               target={t.label === "Viber" ? undefined : "_blank"}
               rel="noopener noreferrer"
               onClick={() => setOpen(false)}
-              className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium hover:bg-sand"
+              className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-small font-medium hover:bg-sand"
             >
               <span className={`h-2.5 w-2.5 rounded-full ${t.dot}`} /> {t.label}
             </a>
@@ -136,7 +137,7 @@ export default function ShareButton({ url, text, title, variant = "labelled", cl
             type="button"
             role="menuitem"
             onClick={handleCopy}
-            className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium hover:bg-sand"
+            className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-small font-medium hover:bg-sand"
           >
             <Icon name="copy" className="h-4 w-4 text-muted" /> Copy link
           </button>

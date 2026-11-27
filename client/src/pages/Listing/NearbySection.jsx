@@ -187,11 +187,11 @@ export default function NearbySection({ listingId, lat, lng, district }) {
           ))}
         </div>
       ) : error ? (
-        <p className="mt-3 flex items-start gap-2 rounded-xl bg-danger-soft px-4 py-3 text-sm text-danger">
+        <p className="mt-3 flex items-start gap-2 text-small text-danger">
           <Icon name="alert" className="mt-0.5 h-4 w-4" /> Couldn't load nearby places: {error}
         </p>
       ) : groups.length === 0 ? (
-        <div className="mt-3 flex items-start gap-3 rounded-2xl bg-sand/70 p-5 text-muted">
+        <div className="mt-3 flex items-start gap-3 text-muted">
           <Icon name="map" className="mt-0.5 h-5 w-5 text-accent-dark" />
           <div>
             <p className="font-semibold text-ink">No nearby data for this area yet</p>
@@ -202,7 +202,7 @@ export default function NearbySection({ listingId, lat, lng, district }) {
           </div>
         </div>
       ) : shownGroups.length === 0 ? (
-        <p className="mt-4 rounded-2xl bg-sand/70 p-5 text-sm text-muted">
+        <p className="mt-4 text-small text-muted">
           No nearby place matches &ldquo;{filter.trim()}&rdquo;. Try another name, or tap the map.
         </p>
       ) : (
