@@ -21,8 +21,13 @@ import { getListing } from "../../services/listings.service.js";
 import { LISTING_TYPE_LABEL, formatPrice } from "../../utils/formatPrice.js";
 import { addToCompare, getCompareIds, onCompareChange } from "../Compare/compareStore.js";
 import Gallery from "./Gallery.jsx";
-import ListingMap from "./ListingMap.jsx";
+import NearbySection from "./NearbySection.jsx";
 import { usePageTitle } from "../../hooks/usePageTitle.js";
+import { recordView } from "../../services/stats.service.js";
+import { VIEW_KIND } from "@realestate/shared";
+import TrustBadges, { VerifiedBadge } from "../../components/TrustBadges.jsx";
+import ShareButton from "../../components/ShareButton.jsx";
+import { shareLink, shareText } from "../../utils/shareLink.js";
 import AreaCard from "./AreaCard.jsx";
 
 export default function Listing() {
@@ -54,6 +59,11 @@ export default function Listing() {
     return () => {
       cancelled = true;
     };
+  }, [id]);
+
+  // Seller stats: count this page view (the server ignores repeats within the hour and the owner)
+  useEffect(() => {
+    recordView(id, VIEW_KIND.PAGE);
   }, [id]);
 
   // Keep the "Added to compare" state right, even if changed on another page or tab
@@ -172,6 +182,11 @@ export default function Listing() {
               ) : (
                 <Badge>3D tour coming soon</Badge>
               )}
+              <TrustBadges
+                tourVerified={listing.tourVerified}
+                sellerVerified={listing.sellerVerified}
+                size="md"
+              />
             </div>
             <h1 className="display mt-4 text-3xl leading-tight text-ink sm:text-[2.6rem]">
               {listing.title}
@@ -232,11 +247,13 @@ export default function Listing() {
           )}
 
           {hasLocation && (
-            <section>
-              <h2 className="display text-2xl text-ink">Where it is</h2>
-              <p className="mt-1 mb-4 text-muted">{listing.district}, Nepal</p>
-              <ListingMap lat={listing.lat} lng={listing.lng} />
-            </section>
+            <NearbySection
+              key={listing.id}
+              listingId={listing.id}
+              lat={listing.lat}
+              lng={listing.lng}
+              district={listing.district}
+            />
           )}
         </div>
 
@@ -305,6 +322,22 @@ export default function Listing() {
               )}
             </div>
 
+            {/* Share: buyers send it to family, sellers to their contacts. Live listings only,
+                because the preview page (/share/...) only shows live homes. */}
+            {listing.status === LISTING_STATUS.LIVE ? (
+              <ShareButton
+                url={shareLink(listing.id)}
+                text={shareText(listing)}
+                title={listing.title}
+              />
+            ) : (
+              isOwner && (
+                <p className="text-center text-xs text-muted">
+                  You can share this listing once it's live.
+                </p>
+              )
+            )}
+
             {inCompare ? (
               <Link
                 to={ROUTES.COMPARE}
@@ -332,17 +365,22 @@ export default function Listing() {
             )}
 
             {listing.seller && (
-              <div className="flex items-center gap-3 border-t border-border pt-5">
+              <div className="flex items-start gap-3 border-t border-border pt-5">
                 <Avatar name={listing.seller.fullName} />
-                <div>
+                <div className="min-w-0">
                   <p className="text-xs text-muted">Listed by</p>
                   <p className="font-semibold text-ink">{listing.seller.fullName}</p>
+                  {(listing.seller.verified || listing.seller.emailVerified) && (
+                    <div className="mt-2 flex flex-wrap gap-1.5">
+                      {listing.seller.verified && (
+                        <VerifiedBadge kind="seller" tipSide="top" tipAlign="end" />
+                      )}
+                      {listing.seller.emailVerified && (
+                        <VerifiedBadge kind="email" tipSide="top" tipAlign="end" />
+                      )}
+                    </div>
+                  )}
                 </div>
-                <Icon
-                  name="shield"
-                  className="ml-auto h-5 w-5 text-success"
-                  aria-label="Verified seller"
-                />
               </div>
             )}
           </div>

@@ -17,6 +17,7 @@ import { mediaUrl } from "../../utils/mediaUrl.js";
 import { getCompareIds, onCompareChange, removeFromCompare } from "./compareStore.js";
 import Photo from "../../components/Photo.jsx";
 import { usePageTitle } from "../../hooks/usePageTitle.js";
+import { VerifiedBadge } from "../../components/TrustBadges.jsx";
 
 const show = (value) => (value === null || value === undefined ? "–" : value);
 
@@ -44,6 +45,24 @@ const ROWS = [
         </Link>
       ) : (
         <span className="text-muted">Not yet</span>
+      ),
+  },
+  {
+    label: "Verified tour",
+    cell: (l) =>
+      l.tourVerified ? (
+        <VerifiedBadge kind="tour" tipSide="top" />
+      ) : (
+        <span className="text-muted">No</span>
+      ),
+  },
+  {
+    label: "Verified seller",
+    cell: (l) =>
+      l.sellerVerified ? (
+        <VerifiedBadge kind="seller" tipSide="top" />
+      ) : (
+        <span className="text-muted">No</span>
       ),
   },
 ];

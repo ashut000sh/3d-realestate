@@ -12,10 +12,15 @@ import Icon from "../../components/Icon.jsx";
 import Logo from "../../components/Logo.jsx";
 import { ROUTES, buildRoute } from "../../constants/routes.js";
 import { getListing } from "../../services/listings.service.js";
+import { recordView } from "../../services/stats.service.js";
+import { VIEW_KIND } from "@realestate/shared";
 import { formatPrice } from "../../utils/formatPrice.js";
 import { mediaUrl } from "../../utils/mediaUrl.js";
 import { TourViewer, formatLength } from "./TourViewer.js";
 import { usePageTitle } from "../../hooks/usePageTitle.js";
+import ShareButton from "../../components/ShareButton.jsx";
+import { shareLink, shareText } from "../../utils/shareLink.js";
+import { LISTING_STATUS } from "@realestate/shared";
 
 // Uploaded tours live on the API server (/uploads/tours/...). Anything else that starts
 // with "/" (like the seed data's /test-tour.glb) is a file in client/public on this site.
@@ -55,6 +60,11 @@ export default function Tour() {
   const [waitingSecondPoint, setWaitingSecondPoint] = useState(false);
   const [autoRotate, setAutoRotate] = useState(false);
   const [showHelp, setShowHelp] = useState(true);
+
+  // Seller stats: count this tour open (the server ignores repeats within the hour and the owner)
+  useEffect(() => {
+    recordView(id, VIEW_KIND.TOUR);
+  }, [id]);
 
   useEffect(() => {
     let cancelled = false;
@@ -197,9 +207,19 @@ export default function Tour() {
               </span>
             </span>
           </Link>
-          <span className="glass pointer-events-auto hidden items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold sm:flex">
-            <span className="h-2 w-2 animate-pulse rounded-full bg-accent" /> Live 3D tour
-          </span>
+          <div className="pointer-events-auto flex items-center gap-2">
+            <span className="glass hidden items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold md:flex">
+              <span className="h-2 w-2 animate-pulse rounded-full bg-accent" /> Live 3D tour
+            </span>
+            {listing.status === LISTING_STATUS.LIVE && (
+              <ShareButton
+                variant="glass"
+                url={shareLink(listing.id, { tour: true })}
+                text={shareText(listing)}
+                title={`${listing.title} · 3D tour`}
+              />
+            )}
+          </div>
         </header>
       )}
 

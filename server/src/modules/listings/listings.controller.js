@@ -9,10 +9,13 @@ import { listingFileUrl, receiveImages, removeFiles } from "./listings.upload.js
 const LISTING_TYPES = Object.values(LISTING_TYPE);
 
 // GET /api/listings   (public)
-// in:  query: ?q, type, minPrice, maxPrice, district, minArea (sq ft), page
+// in:  query: ?q, type, minPrice, maxPrice, district, minArea (sq ft), verifiedSeller (true = verified sellers only), page
 // out: 200 { items: ListingSummary[], page, total }
 export async function list(req, res) {
-  const { q, type, district, minPrice, maxPrice, minArea, page } = req.query;
+  const { q, type, district, minPrice, maxPrice, minArea, verifiedSeller, page } = req.query;
+  if (verifiedSeller !== undefined && !["true", "false", ""].includes(verifiedSeller)) {
+    throw httpError(400, "verifiedSeller must be true or false");
+  }
 
   if (type && !LISTING_TYPES.includes(type)) {
     throw httpError(400, `type must be one of: ${LISTING_TYPES.join(", ")}`);
@@ -27,6 +30,7 @@ export async function list(req, res) {
     minPrice: readOptionalNumber(minPrice, "minPrice"),
     maxPrice: readOptionalNumber(maxPrice, "maxPrice"),
     minArea: readOptionalNumber(minArea, "minArea"),
+    verifiedSeller: verifiedSeller === "true",
     page: page === undefined || page === "" ? 1 : readId(page, "page"),
   };
   if (

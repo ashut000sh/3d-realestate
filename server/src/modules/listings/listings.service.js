@@ -1,6 +1,6 @@
 // LISTINGS service: all database queries for this module live here.
 // Controllers call these functions; nothing else touches the listings tables.
-import { LIMITS, LISTING_STATUS, ROLES } from "@realestate/shared";
+import { LIMITS, LISTING_STATUS, ROLES, SCAN_STATUS } from "@realestate/shared";
 import { query } from "../../config/db.js";
 import { httpError } from "../../middleware/errorHandler.js";
 
@@ -10,9 +10,15 @@ const toNumber = (value) => (value === null || value === undefined ? null : Numb
 // Columns shared by ListingSummary and Listing. "l" is the listings table.
 // The cover image is the photo with the lowest position (0 = cover).
 // Exported for other modules that show listing cards (e.g. saved homes)
+// Trust badges: tour_verified = our team published a scan of it; seller_verified = an admin
+// checked the seller's documents. (SCAN_STATUS.PUBLISHED is a constant, not user input.)
 export const SUMMARY_COLUMNS = `
   l.id, l.title, l.type, l.price, l.district, l.lat, l.lng, l.area_sqft,
   (l.tour_url IS NOT NULL) AS has_tour,
+  EXISTS (SELECT 1 FROM scan_requests sr
+           WHERE sr.listing_id = l.id AND sr.status = '${SCAN_STATUS.PUBLISHED}') AS tour_verified,
+  EXISTS (SELECT 1 FROM users su
+           WHERE su.id = l.seller_id AND su.seller_verified_at IS NOT NULL) AS seller_verified,
   (SELECT url FROM listing_images li
     WHERE li.listing_id = l.id
     ORDER BY li.position, li.id LIMIT 1) AS cover_image_url`;
@@ -20,7 +26,7 @@ export const SUMMARY_COLUMNS = `
 const DETAIL_COLUMNS = `${SUMMARY_COLUMNS},
   l.description, l.address, l.bedrooms, l.bathrooms, l.floors, l.status,
   l.tour_url, l.created_at, l.seller_id,
-  u.full_name AS seller_full_name,
+  u.full_name AS seller_full_name, u.is_verified AS seller_email_verified,
   COALESCE(
     (SELECT json_agg(li.url ORDER BY li.position, li.id)
        FROM listing_images li WHERE li.listing_id = l.id),
@@ -38,6 +44,8 @@ export function toSummary(row) {
     coverImageUrl: row.cover_image_url ?? null,
     hasTour: row.has_tour,
     areaSqft: row.area_sqft, // null = not provided
+    tourVerified: row.tour_verified,
+    sellerVerified: row.seller_verified,
     lat: row.lat,
     lng: row.lng,
   };
@@ -55,14 +63,28 @@ function toListing(row) {
     status: row.status,
     tourUrl: row.tour_url,
     images: row.images,
-    seller: { id: row.seller_id, fullName: row.seller_full_name },
+    seller: {
+      id: row.seller_id,
+      fullName: row.seller_full_name,
+      verified: row.seller_verified,
+      emailVerified: row.seller_email_verified,
+    },
     createdAt: row.created_at,
   };
 }
 
 // Search. Only live listings are shown to buyers.
-// filters: { q, type, district, minPrice, maxPrice, minArea, page } (checked by the controller)
-export async function listListings({ q, type, district, minPrice, maxPrice, minArea, page }) {
+// filters: { q, type, district, minPrice, maxPrice, minArea, verifiedSeller, page } (checked by the controller)
+export async function listListings({
+  q,
+  type,
+  district,
+  minPrice,
+  maxPrice,
+  minArea,
+  verifiedSeller,
+  page,
+}) {
   // Build "WHERE ... AND ..." with $1, $2 parameters. User input never goes into the SQL text.
   const conditions = ["l.status = $1"];
   const params = [LISTING_STATUS.LIVE];
@@ -78,6 +100,11 @@ export async function listListings({ q, type, district, minPrice, maxPrice, minA
   if (minPrice !== undefined) add("l.price >= ?", minPrice);
   if (maxPrice !== undefined) add("l.price <= ?", maxPrice);
   if (minArea !== undefined) add("l.area_sqft >= ?", minArea); // listings with no area are left out
+  if (verifiedSeller) {
+    conditions.push(
+      "EXISTS (SELECT 1 FROM users su WHERE su.id = l.seller_id AND su.seller_verified_at IS NOT NULL)",
+    );
+  }
 
   const where = conditions.join(" AND ");
 

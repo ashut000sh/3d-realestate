@@ -24,6 +24,8 @@ const PATHS = {
   user: "M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm-7 9a7 7 0 0 1 14 0",
   logout: "M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 17l5-5-5-5M15 12H4",
   shield: "M12 3 4 6v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V6l-8-3Z",
+  shieldCheck: "M12 3 4 6v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V6l-8-3Zm-3.5 9 2.5 2.5 4.5-5",
+  mailCheck: "M4 6h16v7M4 6v12h9M4 6l8 7 8-7m-5 12 2 2 4-4",
   mail: "M4 6h16v12H4V6Zm0 0 8 7 8-7",
   lock: "M6 11h12v10H6V11Zm2 0V8a4 4 0 0 1 8 0v3",
   phone:
@@ -55,7 +57,22 @@ const PATHS = {
   scan: "M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3M4 12h16",
   play: "M7 4v16l13-8L7 4Z",
   external: "M14 4h6v6m0-6-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5",
+  // Nearby places
+  school: "M2 9l10-5 10 5-10 5L2 9Zm4 2v5c2 2 10 2 12 0v-5M22 9v6",
+  health: "M9 3h6v6h6v6h-6v6H9v-6H3V9h6V3Z",
+  pill: "M10.5 3.5a5 5 0 0 1 7 7l-7 7a5 5 0 0 1-7-7l7-7ZM7 10l7 7",
+  bus: "M5 4h14v13H5V4Zm0 8h14M8 17v3m8-3v3M8 14.5h.01M16 14.5h.01",
+  temple: "M12 2v3m-5 5 5-5 5 5M5 10h14M6 10v10m12-10v10M3 21h18M10 21v-5h4v5",
+  cart: "M3 4h2l2.4 11h11.2L21 7H6.2M9 20h.01M18 20h.01",
+  bank: "M3 9 12 4l9 5M4 10h16M6 10v8m4-8v8m4-8v8m4-8v8M3 20h18",
+  walk: "M13 4h.01M10 21l2-6 3 3v3m-6-9 3-3 3 3 3 1M9 12l-2 4",
+  share:
+    "M8.6 13.5 15.4 17.5M15.4 6.5 8.6 10.5M18 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM6 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM18 22a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z",
+  copy: "M9 9h11v11H9V9ZM5 15H4V4h11v1",
 };
+
+// The raw path data, for places that need an icon outside React (map markers)
+export const ICON_PATHS = PATHS;
 
 export default function Icon({ name, className = "h-5 w-5", strokeWidth = 1.8, ...props }) {
   return (

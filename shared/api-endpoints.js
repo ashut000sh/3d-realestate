@@ -14,10 +14,14 @@ export const API = {
     LIST: "/api/listings",
     COMPARE: "/api/listings/compare",
     MINE: "/api/listings/mine",
+    MINE_STATS: "/api/listings/mine/stats",
     ONE: "/api/listings/:id",
     CREATE: "/api/listings",
     UPDATE: "/api/listings/:id",
     UPLOAD_IMAGES: "/api/listings/:id/images",
+    NEARBY: "/api/listings/:id/nearby",
+    AVAILABILITY: "/api/listings/:id/availability",
+    RECORD_VIEW: "/api/listings/:id/views",
   },
   SCANS: {
     CREATE: "/api/scan-requests",
@@ -45,9 +49,17 @@ export const API = {
     STATS: "/api/admin/stats",
     SCAN_QUEUE: "/api/admin/scan-requests",
     USERS: "/api/admin/users",
+    VERIFY_SELLER: "/api/admin/users/:id/verify-seller",
+    UNVERIFY_SELLER: "/api/admin/users/:id/unverify-seller",
     INSIGHTS: "/api/admin/insights",
     BOOKINGS: "/api/admin/bookings",
   },
+};
+
+// Not under /api: tiny HTML pages with link-preview tags (WhatsApp, Facebook...) that then
+// send people on to the website. Served by the API server.
+export const SHARE = {
+  LISTING: "/share/listings/:id", // ?view=tour opens the 3D tour instead of the listing page
 };
 
 export function buildPath(pattern, params = {}) {
