@@ -8,6 +8,7 @@ import { useEffect, useState } from "react";
 import { ROLES, SCAN_STATUS } from "@realestate/shared";
 import Avatar from "../../components/Avatar.jsx";
 import Badge from "../../components/Badge.jsx";
+import Button from "../../components/Button.jsx";
 import EmptyState from "../../components/EmptyState.jsx";
 import Icon from "../../components/Icon.jsx";
 import { Skeleton } from "../../components/Loader.jsx";
@@ -15,6 +16,7 @@ import { useAuth } from "../../hooks/useAuth.jsx";
 import { getScanQueue, getStats, getUsers } from "../../services/admin.service.js";
 import AllBookings from "./AllBookings.jsx";
 import Insights from "./Insights.jsx";
+import VerifySellerDialog from "./VerifySellerDialog.jsx";
 import ScanQueue, { STATUS_META } from "./ScanQueue.jsx";
 import { usePageTitle } from "../../hooks/usePageTitle.js";
 
@@ -78,6 +80,8 @@ export default function AdminDashboard() {
   const stats = useKeyedLoad(statsVersion, () => getStats());
   const queue = useKeyedLoad(queueTab, (status) => getScanQueue(status));
   const users = useKeyedLoad(roleTab, (role) => getUsers(role || undefined));
+  const [verifying, setVerifying] = useState(null); // seller in the confirm dialog
+  const [usersNotice, setUsersNotice] = useState("");
 
   // A request changed status: drop it from this tab if it no longer belongs, refresh numbers
   function handleChanged(updated) {
@@ -235,6 +239,17 @@ export default function AdminDashboard() {
             ))}
           </div>
         </div>
+        {usersNotice && (
+          <p
+            role="status"
+            className="mt-4 flex items-center justify-between gap-3 rounded-xl bg-success-soft px-4 py-3 text-sm text-success"
+          >
+            {usersNotice}
+            <button type="button" aria-label="Dismiss" onClick={() => setUsersNotice("")}>
+              <Icon name="x" className="h-4 w-4" />
+            </button>
+          </p>
+        )}
         <div className="card mt-5 overflow-hidden p-0">
           {users.loading ? (
             <div className="space-y-2 p-5">
@@ -246,13 +261,14 @@ export default function AdminDashboard() {
             <p className="p-5 text-sm text-danger">{users.error}</p>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[640px] text-left text-sm">
+              <table className="w-full min-w-[860px] text-left text-sm">
                 <thead className="bg-sand/60 text-xs tracking-wide text-muted uppercase">
                   <tr>
                     <th className="px-5 py-3 font-semibold">Name</th>
                     <th className="px-5 py-3 font-semibold">Role</th>
                     <th className="px-5 py-3 font-semibold">Phone</th>
-                    <th className="px-5 py-3 font-semibold">Status</th>
+                    <th className="px-5 py-3 font-semibold">Email</th>
+                    <th className="px-5 py-3 font-semibold">Seller check</th>
                     <th className="px-5 py-3 font-semibold">Joined</th>
                   </tr>
                 </thead>
@@ -285,6 +301,31 @@ export default function AdminDashboard() {
                           </Badge>
                         )}
                       </td>
+                      <td className="px-5 py-3">
+                        {person.role !== ROLES.SELLER ? (
+                          <span className="text-muted">–</span>
+                        ) : (
+                          <div className="flex flex-wrap items-center gap-2">
+                            {person.sellerVerifiedAt ? (
+                              <span
+                                className="flex items-center gap-1 text-xs font-semibold text-success"
+                                title={`Verified ${new Date(person.sellerVerifiedAt).toLocaleDateString("en-GB", { dateStyle: "medium" })}${person.sellerVerifiedBy ? ` by ${person.sellerVerifiedBy}` : ""}`}
+                              >
+                                <Icon name="shieldCheck" className="h-4 w-4" /> Verified
+                              </span>
+                            ) : (
+                              <span className="text-xs text-muted">Not checked</span>
+                            )}
+                            <Button
+                              size="sm"
+                              variant={person.sellerVerifiedAt ? "ghost" : "secondary"}
+                              onClick={() => setVerifying(person)}
+                            >
+                              {person.sellerVerifiedAt ? "Remove verification" : "Verify seller"}
+                            </Button>
+                          </div>
+                        )}
+                      </td>
                       <td className="px-5 py-3 text-muted">
                         {new Date(person.createdAt).toLocaleDateString("en-GB", {
                           dateStyle: "medium",
@@ -298,6 +339,31 @@ export default function AdminDashboard() {
           )}
         </div>
       </section>
+      {verifying && (
+        <VerifySellerDialog
+          person={verifying}
+          onClose={() => setVerifying(null)}
+          onDone={(result) => {
+            users.setData((list) =>
+              (list ?? []).map((u) =>
+                u.id === result.userId
+                  ? {
+                      ...u,
+                      sellerVerifiedAt: result.sellerVerifiedAt,
+                      sellerVerifiedBy: result.sellerVerified ? (user?.fullName ?? null) : null,
+                    }
+                  : u,
+              ),
+            );
+            setUsersNotice(
+              result.sellerVerified
+                ? `${verifying.fullName} is now a verified seller.`
+                : `Removed verification from ${verifying.fullName}.`,
+            );
+            setVerifying(null);
+          }}
+        />
+      )}
     </main>
   );
 }

@@ -11,6 +11,8 @@ import chatRoutes from "./modules/chat/chat.routes.js";
 import adminRoutes from "./modules/admin/admin.routes.js";
 import savedRoutes from "./modules/saved/saved.routes.js";
 import nearbyRoutes from "./modules/nearby/nearby.routes.js";
+import statsRoutes from "./modules/stats/stats.routes.js";
+import shareRoutes from "./modules/share/share.routes.js";
 import walkingRoutes from "./modules/walking/walking.routes.js";
 
 export const app = express();
@@ -32,6 +34,8 @@ app.use(chatRoutes);
 app.use(adminRoutes);
 app.use(savedRoutes);
 app.use(nearbyRoutes);
+app.use(statsRoutes);
+app.use(shareRoutes); // /share/... link-preview pages (HTML)
 app.use(walkingRoutes);
 
 app.use((req, res) => res.status(404).json({ error: `No route: ${req.method} ${req.path}` }));

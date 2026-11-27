@@ -22,9 +22,10 @@ User = {
   email: "sita@example.com",
   phone: "98XXXXXXXX",
   role: "buyer",                // ROLES
-  isVerified: true,
+  isVerified: true,             // "Email verified" badge: finished the OTP step
   createdAt: "2026-10-11T05:00:00.000Z"
 }
+// GET /api/admin/users also returns sellerVerifiedAt (date or null) and sellerVerifiedBy (admin's name or null)
 
 ListingSummary = {             // used in lists and search results (smaller, faster)
   id: 12,
@@ -34,6 +35,9 @@ ListingSummary = {             // used in lists and search results (smaller, fas
   district: "Kathmandu",
   coverImageUrl: "https://...",
   hasTour: true,
+  areaSqft: 2100,               // null = not provided. Local units: shared/area.js
+  tourVerified: true,           // badge: the listing has a PUBLISHED scan (our team scanned it)
+  sellerVerified: false,        // badge: an admin checked the seller's documents in person
   lat: 27.7654, lng: 85.3651
 }
 
@@ -42,10 +46,11 @@ Listing = {                     // full details on the Listing screen
   description: "...",
   address: "Ward 6, Budhanilkantha",
   bedrooms: 3, bathrooms: 2, areaSqft: 2100,
+  floors: 2,                    // 1-10 (FLOORS), default 1
   status: "live",               // LISTING_STATUS
   tourUrl: "https://.../tour.glb",   // null until a scan is published
   images: ["https://...", "https://..."],
-  seller: { id: 4, fullName: "Ram Thapa" },
+  seller: { id: 4, fullName: "Ram Thapa", verified: false, emailVerified: true },
   createdAt: "...",
 }
 
@@ -78,7 +83,9 @@ Booking = {
 Conversation = {
   id: 2,
   listing: { id: 12, title: "..." },
-  otherUser: { id: 4, fullName: "Ram Thapa" },
+  tourVerified: true,           // badges for the listing in this chat
+  sellerVerified: false,
+  otherUser: { id: 4, fullName: "Ram Thapa", emailVerified: true, sellerVerified: false },  // sellerVerified only true for the verified seller
   lastMessage: { body: "See you then", createdAt: "..." },
   unreadCount: 1
 }
@@ -117,11 +124,11 @@ NearbyPlace = {          // from OpenStreetMap, within NEARBY.RADIUS_METERS (100
 
 | Constant | Method & path | Who can call | Request | Response |
 |---|---|---|---|---|
-| `API.LISTINGS.LIST` | `GET /api/listings` | public | `query: ?q, type, minPrice, maxPrice, district, page` | `200 { items: ListingSummary[], page, total }` |
+| `API.LISTINGS.LIST` | `GET /api/listings` | public | `query: ?q, type, minPrice, maxPrice, district, minArea (sq ft; homes with no area are left out), verifiedSeller (true = verified sellers only), page` | `200 { items: ListingSummary[], page, total }` |
 | `API.LISTINGS.COMPARE` | `GET /api/listings/compare` | public | `query: ?ids=1,2,3 (max 3)` | `200 { items: Listing[] }` |
 | `API.LISTINGS.MINE` | `GET /api/listings/mine` | seller | `-` | `200 { items: MyListing[] }` every status, newest first. `MyListing` = `ListingSummary` + `status`, `createdAt`, `imagesCount`, `scanStatus` (latest request or `null`), `pendingBookings`, `saves` |
 | `API.LISTINGS.ONE` | `GET /api/listings/:id` | public | `-` | `200 { listing: Listing }` · listings that aren't `live` answer `404` except to their seller and admins (send the token if you have one) |
-| `API.LISTINGS.CREATE` | `POST /api/listings` | seller | `{ title, description, type, price, district, address, lat, lng, bedrooms, bathrooms, areaSqft }` | `201 { listing: Listing }` |
+| `API.LISTINGS.CREATE` | `POST /api/listings` | seller | `{ title, description, type, price, district, address, lat, lng, bedrooms, bathrooms, areaSqft, floors? }` (floors 1-10, default 1) | `201 { listing: Listing }` |
 | `API.LISTINGS.UPLOAD_IMAGES` | `POST /api/listings/:id/images` | owner seller | `multipart/form-data: images (1 to 10 .jpg/.png, max 5 MB each)` | `200 { images: string[] }` |
 | `API.LISTINGS.UPDATE` | `PATCH /api/listings/:id` | owner seller | `any CREATE fields` | `200 { listing: Listing }` |
 
@@ -141,6 +148,14 @@ NearbyPlace = {          // from OpenStreetMap, within NEARBY.RADIUS_METERS (100
 | `API.BOOKINGS.CREATE` | `POST /api/bookings` | logged in | `{ listingId, kind: "viewing" \| "stay", date, checkOut?, message }` | `201 { booking: Booking }` |
 | `API.BOOKINGS.MINE` | `GET /api/bookings/mine` | logged in | `query: ?as=seller (bookings on my listings instead of bookings I made)` | `200 { items: Booking[] }` |
 | `API.BOOKINGS.UPDATE_STATUS` | `PATCH /api/bookings/:id/status` | listing owner | `{ status }` | `200 { booking: Booking }` |
+| `API.LISTINGS.AVAILABILITY` | `GET /api/listings/:id/availability` | anyone (same visibility as `GET /api/listings/:id`) | `query: ?from=YYYY-MM-DD&to=YYYY-MM-DD` (both optional) | `200 { from, to, blocked: [{ start, end }] }` · `400` not a short stay, bad dates or range too long · `404` listing can't be seen |
+
+**Availability** (short stays only, lives in the bookings module):
+
+- Default range: today to `AVAILABILITY.DEFAULT_MONTHS` (6) months ahead. At most `AVAILABILITY.MAX_MONTHS` (12) months per request. `to` is exclusive.
+- `blocked` comes from stays with status in `AVAILABILITY.BLOCKING_STATUSES` (`requested`, `confirmed`). Nights `start` … `end - 1` are taken. `end` is the check-out day, which is free for a new check-in.
+- Touching or overlapping stays are merged into one range. **Only dates are returned**: no booking ids, guests, statuses or messages.
+- The calendar is a guide. `POST /api/bookings` still decides: it returns `409` for a stay that overlaps a **confirmed** one. Two guests may both *request* the same nights, and the owner confirms one; confirming the second then returns `409`.
 
 ## CHAT  ·  owner M5  ·  `server/src/modules/chat/`
 
@@ -156,7 +171,9 @@ NearbyPlace = {          // from OpenStreetMap, within NEARBY.RADIUS_METERS (100
 |---|---|---|---|---|
 | `API.ADMIN.STATS` | `GET /api/admin/stats` | admin | `-` | `200 { listings, users, pendingScans, bookingsThisWeek }` |
 | `API.ADMIN.SCAN_QUEUE` | `GET /api/admin/scan-requests` | admin | `query: ?status` | `200 { items: ScanRequest[] }` · each item also has `sellerFullName` (for the dashboard's seller column) |
-| `API.ADMIN.USERS` | `GET /api/admin/users` | admin | `query: ?role` | `200 { items: User[] }` |
+| `API.ADMIN.USERS` | `GET /api/admin/users` | admin | `query: ?role` | `200 { items: User[] }` (with `sellerVerifiedAt`, `sellerVerifiedBy`) |
+| `API.ADMIN.VERIFY_SELLER` | `PATCH /api/admin/users/:id/verify-seller` | admin | `-` | `200 { userId, sellerVerified: true, sellerVerifiedAt }` · `400` not a seller · `404` unknown user. Verifying again keeps the first date |
+| `API.ADMIN.UNVERIFY_SELLER` | `PATCH /api/admin/users/:id/unverify-seller` | admin | `-` | `200 { userId, sellerVerified: false, sellerVerifiedAt: null }` · same errors |
 | `API.ADMIN.INSIGHTS` | `GET /api/admin/insights` | admin | `-` | `200 { listingsByDistrict: [{ district, total, live }], listingsByType: [{ type, count, avgPrice }], listingsByStatus: [{ status, count }], weekly: [{ weekStart, signups, bookings, listings }] (last 8 weeks, oldest first), scanFunnel: [{ status, count }], bookingsByStatus: [{ status, count }], topListings: [{ id, title, district, type, saves, bookings, chats }] (top 5 live), totals: { withTour, unverifiedUsers, messagesThisWeek, saves } }` |
 | `API.ADMIN.BOOKINGS` | `GET /api/admin/bookings` | admin | `query: ?status` | `200 { items: Booking[] }` newest first, max 200; each also has `sellerFullName` |
 
@@ -185,6 +202,50 @@ NearbyPlace = {          // from OpenStreetMap, within NEARBY.RADIUS_METERS (100
 - Overpass down or slow is **not** an error: `200 { items: [], message: "Nearby places are unavailable right now..." }`.
 - Listing without `lat`/`lng`: `200 { items: [], message: "This home has no map location yet." }`.
 - The cache lives in memory: it empties when the server restarts and isn't shared between server instances.
+
+## STATS  ·  `server/src/modules/stats/`
+
+| Constant | Method + URL | Who | Send | Get back |
+|---|---|---|---|---|
+| `API.LISTINGS.RECORD_VIEW` | `POST /api/listings/:id/views` | anyone | `{ kind: "page" \| "tour", sessionKey? }`. `sessionKey` is required when not logged in (8-64 letters, digits, `-`, `_`) | `200 { counted: boolean }` · `404` listing not live |
+| `API.LISTINGS.MINE_STATS` | `GET /api/listings/mine/stats` | seller | `-` | `200 { windowDays: 30, days: string[], items: ListingStats[] }` |
+
+- **Counting:** at most one view per viewer per listing per kind per `STATS.VIEW_DEDUPE_MINUTES` (60). Logged-in viewers are counted by user id. Anonymous visitors are counted by `sessionKey` (a random id the browser keeps in `localStorage`). `counted: false` means it was a repeat, or you own the listing.
+- Requests arriving at the same moment (double click, React StrictMode) are serialised with a Postgres advisory lock, so only one is counted.
+- The listing's owner and non-live listings are never counted.
+- The website sends `page` when the Listing page opens and `tour` when the Tour page opens.
+
+```js
+ListingStats = {
+  listingId: 7, title: "Heritage homestay", status: "live", hasTour: true,
+  last30Days: Numbers,   // created in the last STATS.WINDOW_DAYS days
+  allTime: Numbers,
+  dailyPageViews: [0, 0, 1, ..., 4]   // one number per entry in `days`, oldest first
+}
+Numbers = {
+  pageViews: 5, tourOpens: 2,
+  saves: 0,      // homes saved right now (removing a save removes it from the count)
+  chats: 1,      // conversations started
+  bookings: { requested: 1, confirmed: 0, declined: 0, cancelled: 3 }   // by created_at
+}
+// days: the last 30 calendar days in STATS.TIME_ZONE (Asia/Kathmandu), "YYYY-MM-DD", oldest first.
+// Tour open rate = tourOpens / pageViews (worked out in the browser). It can pass 100%,
+// because a tour can be opened straight from a shared link.
+```
+
+## SHARE (link previews)  ·  `server/src/modules/share/`
+
+Not under `/api`: these return **HTML**, not JSON. Paths are in `shared/api-endpoints.js` (`SHARE`).
+
+| Constant | Method + URL | Who | Send | Get back |
+|---|---|---|---|---|
+| `SHARE.LISTING` | `GET /share/listings/:id` | anyone | `query: ?view=tour` (optional: open the 3D tour) | `200 text/html`: Open Graph + Twitter tags, then a redirect to the website · `404 text/html` if the listing doesn't exist or isn't **live** |
+
+- **Why it exists:** WhatsApp, Viber, Messenger and Facebook read a link's tags *without running JavaScript*, so the React app can't give each listing its own preview. The website's Share buttons link here instead of to the React page.
+- **Tags:** `og:title` (listing title, `· 3D tour` for `?view=tour`), `og:description` (type · district · price), `og:image` (first photo as an absolute URL), `og:url` (this share link), `og:site_name`, `twitter:card` etc. Every value is HTML-escaped.
+- **Redirect:** people are sent to `CLIENT_URL/listings/:id` (or `/listings/:id/tour`) with a meta refresh plus `location.replace`. Link-preview robots (matched by User-Agent: `facebookexternalhit`, `WhatsApp`, `Viber`, …) get the same tags **without** the redirect, because Facebook follows meta refreshes and would then read the React app's generic tags. The response has `Vary: User-Agent`.
+- **Config** (`server/src/config/env.js`): `CLIENT_URL` = the website (where people are sent). `PUBLIC_SERVER_URL` = this API server's public address, used for `og:image` / `og:url`. Both default to localhost.
+- Previews only appear once the site is on a **public https URL**: chat apps can't fetch `localhost`.
 
 ## WALKING  ·  `server/src/modules/walking/`
 
@@ -224,3 +285,8 @@ Add a line whenever this contract changes, so the other side knows to update.
 | 2026-11-22 | M1 | Added `API.LISTINGS.UPLOAD_IMAGES` (listing photos) and `?as=seller` on `API.BOOKINGS.MINE`; documented the login 401/403 errors |
 | 2026-11-27 | M1 | Added `API.LISTINGS.WALKING_ROUTE` (walking route to a place, rate limited) and `id` on `NearbyPlace` |
 | 2026-11-26 | M1 | Added `API.LISTINGS.NEARBY` (nearby places from OpenStreetMap) and the `NearbyPlace` shape |
+| 2026-11-26 | M1 | Added `API.LISTINGS.AVAILABILITY` (blocked dates for the short-stay calendar) |
+| 2026-11-26 | M1 | Added `API.LISTINGS.RECORD_VIEW` and `API.LISTINGS.MINE_STATS` (seller stats) |
+| 2026-11-26 | M1 | Trust badges: `tourVerified` / `sellerVerified` on listings and conversations, `?verifiedSeller` search filter, `API.ADMIN.VERIFY_SELLER` / `UNVERIFY_SELLER` |
+| 2026-11-26 | M1 | Added `SHARE.LISTING` (`GET /share/listings/:id`, HTML link-preview page) and the `PUBLIC_SERVER_URL` env setting |
+| 2026-11-27 | M1 | `areaSqft` on ListingSummary, `floors` on Listing (create/update too), `?minArea` search filter. Area units (ropani-aana, bigha-kattha-dhur) are worked out from sq ft with `shared/area.js`; the API stays in sq ft |

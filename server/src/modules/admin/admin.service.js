@@ -1,13 +1,16 @@
 // ADMIN service: all database queries for this module live here.
-// Read-only: admin CHANGES to scan requests go through the scans module.
+// Read-only, except the "verified seller" badge (setSellerVerified).
+// Admin CHANGES to scan requests go through the scans module.
 import {
   BOOKING_STATUS,
   DISTRICTS,
   LISTING_STATUS,
   LISTING_TYPE,
+  ROLES,
   SCAN_STATUS,
 } from "@realestate/shared";
 import { query } from "../../config/db.js";
+import { httpError } from "../../middleware/errorHandler.js";
 
 // Numbers for the four cards at the top of the admin dashboard
 export async function getStats() {
@@ -62,10 +65,12 @@ export async function listScanQueue(status) {
 // Every user (or only one role), newest first. password_hash is never selected.
 export async function listUsers(role) {
   const { rows } = await query(
-    `SELECT id, full_name, email, phone, role, is_verified, created_at
-       FROM users
-      WHERE ($1::text IS NULL OR role = $1)
-      ORDER BY created_at DESC, id DESC`,
+    `SELECT u.id, u.full_name, u.email, u.phone, u.role, u.is_verified, u.created_at,
+            u.seller_verified_at, v.full_name AS seller_verified_by_name
+       FROM users u
+       LEFT JOIN users v ON v.id = u.seller_verified_by
+      WHERE ($1::text IS NULL OR u.role = $1)
+      ORDER BY u.created_at DESC, u.id DESC`,
     [role ?? null],
   );
   return {
@@ -77,7 +82,36 @@ export async function listUsers(role) {
       role: row.role,
       isVerified: row.is_verified,
       createdAt: row.created_at,
+      sellerVerifiedAt: row.seller_verified_at,
+      sellerVerifiedBy: row.seller_verified_by_name ?? null,
     })),
+  };
+}
+
+// "Verified seller" badge on (verified = true) or off. Only users with role seller.
+// Stores who did it and when; verifying again keeps the first date.
+export async function setSellerVerified(userId, adminId, verified) {
+  const { rows } = await query("SELECT role FROM users WHERE id = $1", [userId]);
+  if (rows.length === 0) throw httpError(404, "User not found");
+  if (rows[0].role !== ROLES.SELLER) throw httpError(400, "Only sellers can be verified");
+
+  const updated = await query(
+    verified
+      ? `UPDATE users
+            SET seller_verified_at = COALESCE(seller_verified_at, now()),
+                seller_verified_by = COALESCE(seller_verified_by, $2)
+          WHERE id = $1
+          RETURNING id, seller_verified_at`
+      : `UPDATE users SET seller_verified_at = NULL, seller_verified_by = NULL
+          WHERE id = $1
+          RETURNING id, seller_verified_at`,
+    verified ? [userId, adminId] : [userId],
+  );
+  const row = updated.rows[0];
+  return {
+    userId: row.id,
+    sellerVerified: row.seller_verified_at !== null,
+    sellerVerifiedAt: row.seller_verified_at,
   };
 }
 

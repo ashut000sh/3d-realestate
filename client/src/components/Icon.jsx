@@ -24,6 +24,8 @@ const PATHS = {
   user: "M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm-7 9a7 7 0 0 1 14 0",
   logout: "M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 17l5-5-5-5M15 12H4",
   shield: "M12 3 4 6v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V6l-8-3Z",
+  shieldCheck: "M12 3 4 6v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V6l-8-3Zm-3.5 9 2.5 2.5 4.5-5",
+  mailCheck: "M4 6h16v7M4 6v12h9M4 6l8 7 8-7m-5 12 2 2 4-4",
   mail: "M4 6h16v12H4V6Zm0 0 8 7 8-7",
   lock: "M6 11h12v10H6V11Zm2 0V8a4 4 0 0 1 8 0v3",
   phone:
@@ -64,6 +66,9 @@ const PATHS = {
   cart: "M3 4h2l2.4 11h11.2L21 7H6.2M9 20h.01M18 20h.01",
   bank: "M3 9 12 4l9 5M4 10h16M6 10v8m4-8v8m4-8v8m4-8v8M3 20h18",
   walk: "M13 4h.01M10 21l2-6 3 3v3m-6-9 3-3 3 3 3 1M9 12l-2 4",
+  share:
+    "M8.6 13.5 15.4 17.5M15.4 6.5 8.6 10.5M18 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM6 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM18 22a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z",
+  copy: "M9 9h11v11H9V9ZM5 15H4V4h11v1",
 };
 
 // The raw path data, for places that need an icon outside React (map markers)

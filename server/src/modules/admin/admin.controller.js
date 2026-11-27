@@ -26,6 +26,23 @@ export async function users(req, res) {
   res.json(await adminService.listUsers(readFilter(req.query.role, ROLES, "role")));
 }
 
+// PATCH /api/admin/users/:id/verify-seller     (admin)
+// PATCH /api/admin/users/:id/unverify-seller   (admin)
+// in:  -   (the admin's identity comes from the token)
+// out: 200 { userId, sellerVerified, sellerVerifiedAt }   400 if the user isn't a seller, 404 unknown
+export async function verifySeller(req, res) {
+  res.json(await adminService.setSellerVerified(readUserId(req.params.id), req.user.id, true));
+}
+export async function unverifySeller(req, res) {
+  res.json(await adminService.setSellerVerified(readUserId(req.params.id), req.user.id, false));
+}
+
+function readUserId(value) {
+  const id = Number(value);
+  if (!Number.isInteger(id) || id <= 0) throw httpError(400, "id must be a positive number");
+  return id;
+}
+
 // GET /api/admin/insights   (admin)
 // in:  -
 // out: 200 Insights (docs/API.md): numbers for the dashboard charts

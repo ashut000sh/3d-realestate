@@ -4,7 +4,7 @@
 //            request a 3D scan, and see saves and waiting bookings. Sellers only.
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { LISTING_STATUS, SCAN_STATUS } from "@realestate/shared";
+import { LISTING_STATUS, SCAN_STATUS, formatAreaShort } from "@realestate/shared";
 import Badge from "../../components/Badge.jsx";
 import Button from "../../components/Button.jsx";
 import EmptyState from "../../components/EmptyState.jsx";
@@ -16,6 +16,8 @@ import { LISTING_TYPE_LABEL, formatPrice } from "../../utils/formatPrice.js";
 import { mediaUrl } from "../../utils/mediaUrl.js";
 import EditListingDialog from "./EditListingDialog.jsx";
 import RequestScanDialog from "./RequestScanDialog.jsx";
+import StatsDialog, { totalBookings, tourOpenRate } from "./StatsDialog.jsx";
+import { getMyListingStats } from "../../services/stats.service.js";
 import Photo from "../../components/Photo.jsx";
 import { usePageTitle } from "../../hooks/usePageTitle.js";
 
@@ -55,7 +57,65 @@ function Stat({ icon, label, value }) {
   );
 }
 
-function ListingRow({ item, onEdit, onScan, onPhotos, busy }) {
+// "1.2k" for big numbers so the row stays on one line
+const compact = (n) => (n >= 1000 ? `${(n / 1000).toFixed(n >= 10000 ? 0 : 1)}k` : String(n));
+
+// One line of 30-day numbers under each listing: views · tour opens · saves · bookings
+function StatsLine({ stats, statsState, windowDays, onOpen }) {
+  if (statsState === "loading") return <Skeleton className="h-9 w-full max-w-md rounded-xl" />;
+  if (statsState === "error" || !stats) {
+    return <p className="text-xs text-muted">Stats are unavailable right now.</p>;
+  }
+  const n = stats.last30Days;
+  const parts = [
+    { icon: "eye", value: n.pageViews, label: n.pageViews === 1 ? "view" : "views" },
+    { icon: "cube", value: n.tourOpens, label: n.tourOpens === 1 ? "tour open" : "tour opens" },
+    { icon: "heart", value: n.saves, label: n.saves === 1 ? "save" : "saves" },
+    {
+      icon: "calendar",
+      value: totalBookings(n),
+      label: totalBookings(n) === 1 ? "booking" : "bookings",
+    },
+  ];
+  return (
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-xl bg-sand/60 px-3 py-2 text-sm">
+      <span className="text-xs font-semibold tracking-wide text-muted uppercase">
+        {windowDays} days
+      </span>
+      {parts.map((p, i) => (
+        <span key={p.icon} className="flex items-center gap-1.5 text-text">
+          {i > 0 && <span className="text-border">·</span>}
+          <Icon name={p.icon} className="h-4 w-4 text-accent-dark" />
+          <span className="font-semibold text-ink">{compact(p.value)}</span> {p.label}
+        </span>
+      ))}
+      {stats.hasTour && n.pageViews > 0 && (
+        <span className="rounded-full bg-accent-soft px-2 py-0.5 text-xs font-semibold text-accent-dark">
+          {tourOpenRate(n)} open the tour
+        </span>
+      )}
+      <button
+        type="button"
+        onClick={onOpen}
+        className="ml-auto flex items-center gap-1 font-semibold text-primary hover:underline"
+      >
+        <Icon name="chart" className="h-4 w-4" /> Stats
+      </button>
+    </div>
+  );
+}
+
+function ListingRow({
+  item,
+  onEdit,
+  onScan,
+  onPhotos,
+  busy,
+  stats,
+  statsState,
+  windowDays,
+  onStats,
+}) {
   const fileInput = useRef(null);
   const meta = STATUS_META[item.status] ?? { label: item.status, tone: "neutral" };
   const cover = mediaUrl(item.coverImageUrl);
@@ -100,6 +160,9 @@ function ListingRow({ item, onEdit, onScan, onPhotos, busy }) {
         <p className="font-semibold text-primary">{formatPrice(item.price, item.type)}</p>
         <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted">
           <span className="flex items-center gap-1.5">
+            <Icon name="area" className="h-4 w-4" /> {formatAreaShort(item.areaSqft, item.district)}
+          </span>
+          <span className="flex items-center gap-1.5">
             <Icon name="image" className="h-4 w-4" /> {item.imagesCount} photos
           </span>
           <span className="flex items-center gap-1.5">
@@ -120,6 +183,12 @@ function ListingRow({ item, onEdit, onScan, onPhotos, busy }) {
             </span>
           )}
         </div>
+        <StatsLine
+          stats={stats}
+          statsState={statsState}
+          windowDays={windowDays}
+          onOpen={() => onStats(item.id)}
+        />
       </div>
 
       <div className="flex flex-wrap gap-2 lg:w-56 lg:flex-col">
@@ -169,6 +238,9 @@ export default function MyListings() {
   const [busy, setBusy] = useState({ id: null, what: null });
   const [notice, setNotice] = useState({ tone: "", text: "" });
   const [version, setVersion] = useState(0);
+  // Seller stats load separately, so a slow stats query never holds up the listings
+  const [stats, setStats] = useState({ loadedVersion: null, data: null, error: "" });
+  const [statsFor, setStatsFor] = useState(null); // listing id whose Stats dialog is open
 
   useEffect(() => {
     let cancelled = false;
@@ -179,6 +251,23 @@ export default function MyListings() {
       cancelled = true;
     };
   }, [version]);
+
+  useEffect(() => {
+    let cancelled = false;
+    getMyListingStats()
+      .then((data) => !cancelled && setStats({ loadedVersion: version, data, error: "" }))
+      .catch(
+        (err) => !cancelled && setStats({ loadedVersion: version, data: null, error: err.message }),
+      );
+    return () => {
+      cancelled = true;
+    };
+  }, [version]);
+  const statsState =
+    stats.loadedVersion !== version && !stats.data ? "loading" : stats.error ? "error" : "ready";
+  const statsById = new Map((stats.data?.items ?? []).map((s) => [s.listingId, s]));
+  const windowDays = stats.data?.windowDays ?? 30;
+  const openStats = statsFor && statsById.get(statsFor);
 
   const reload = () => setVersion((v) => v + 1);
   const say = (tone, text) => setNotice({ tone, text });
@@ -329,6 +418,10 @@ export default function MyListings() {
               onScan={setScanning}
               onPhotos={handlePhotos}
               busy={busy.id === item.id ? busy.what : null}
+              stats={statsById.get(item.id)}
+              statsState={statsState}
+              windowDays={windowDays}
+              onStats={setStatsFor}
             />
           ))}
         </ul>
@@ -343,6 +436,14 @@ export default function MyListings() {
             say("success", `Saved changes to ${updated.title}.`);
             reload();
           }}
+        />
+      )}
+      {openStats && (
+        <StatsDialog
+          stats={openStats}
+          days={stats.data.days}
+          windowDays={windowDays}
+          onClose={() => setStatsFor(null)}
         />
       )}
       {scanning && (

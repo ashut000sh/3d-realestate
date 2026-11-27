@@ -25,3 +25,8 @@ export const uploadTour = (id, file) => {
 export const getInsights = () => request("GET", API.ADMIN.INSIGHTS);
 export const getAllBookings = (status) =>
   request("GET", API.ADMIN.BOOKINGS, { query: { status } }).then((d) => d.items);
+
+// "Verified seller" badge: { userId, sellerVerified, sellerVerifiedAt }
+export const verifySeller = (id) => request("PATCH", buildPath(API.ADMIN.VERIFY_SELLER, { id }));
+export const unverifySeller = (id) =>
+  request("PATCH", buildPath(API.ADMIN.UNVERIFY_SELLER, { id }));

@@ -4,7 +4,7 @@
 // Wireframe: 5 Search + Filters
 // Job:       Filters (type, price, district) + results list + Leaflet map. Calls LISTINGS.LIST.
 //
-// All filters live in the URL (?q=&type=&district=&minPrice=&maxPrice=&page=),
+// All filters live in the URL (?q=&type=&district=&minPrice=&maxPrice=&verifiedSeller=&page=),
 // so a search can be shared as a link and survives a page refresh.
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
@@ -18,7 +18,7 @@ import FilterPanel from "./FilterPanel.jsx";
 import ResultsMap from "./ResultsMap.jsx";
 import { usePageTitle } from "../../hooks/usePageTitle.js";
 
-const FILTER_KEYS = ["q", "type", "district", "minPrice", "maxPrice"];
+const FILTER_KEYS = ["q", "type", "district", "minPrice", "maxPrice", "minArea", "verifiedSeller"];
 
 export default function Search() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -98,7 +98,7 @@ export default function Search() {
         <aside className="lg:sticky lg:top-24 lg:self-start">
           <FilterPanel
             // Back/forward or "Clear" changes the URL: a new key resets the text boxes to match
-            key={`${filters.q}|${filters.minPrice}|${filters.maxPrice}`}
+            key={`${filters.q}|${filters.minPrice}|${filters.maxPrice}|${filters.minArea}`}
             filters={filters}
             onChange={updateFilters}
             onClear={() => setSearchParams(new URLSearchParams())}

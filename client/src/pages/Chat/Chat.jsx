@@ -9,6 +9,7 @@ import Avatar from "../../components/Avatar.jsx";
 import Button from "../../components/Button.jsx";
 import EmptyState from "../../components/EmptyState.jsx";
 import Icon from "../../components/Icon.jsx";
+import { VerifiedBadge } from "../../components/TrustBadges.jsx";
 import { Skeleton } from "../../components/Loader.jsx";
 import { ROUTES, buildRoute } from "../../constants/routes.js";
 import { useAuth } from "../../hooks/useAuth.jsx";
@@ -91,6 +92,15 @@ function ConversationList({ conversations, selectedId, onSelect, filter, setFilt
                       className={`truncate ${c.unreadCount > 0 ? "font-bold text-ink" : "font-semibold"}`}
                     >
                       {c.otherUser.fullName}
+                      {c.otherUser.sellerVerified && (
+                        <Icon
+                          name="shieldCheck"
+                          className="ml-1 inline h-3.5 w-3.5 align-[-2px] text-success"
+                          aria-label="Verified seller"
+                          aria-hidden={false}
+                          role="img"
+                        />
+                      )}
                     </span>
                     <span className="shrink-0 text-xs text-muted">
                       {shortWhen(c.lastMessage?.createdAt)}
@@ -171,7 +181,16 @@ function Thread({
         </button>
         <Avatar name={conversation.otherUser.fullName} />
         <div className="min-w-0 flex-1">
-          <p className="truncate font-semibold text-ink">{conversation.otherUser.fullName}</p>
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+            <p className="truncate font-semibold text-ink">{conversation.otherUser.fullName}</p>
+            {conversation.otherUser.sellerVerified && <VerifiedBadge kind="seller" />}
+            {conversation.otherUser.emailVerified && (
+              <VerifiedBadge kind="email" className="hidden sm:inline-flex" />
+            )}
+            {conversation.tourVerified && (
+              <VerifiedBadge kind="tour" className="hidden md:inline-flex" />
+            )}
+          </div>
           <p className="truncate text-xs text-muted">
             {typing ? <span className="text-primary">typing…</span> : conversation.listing.title}
           </p>
