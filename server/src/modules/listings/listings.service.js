@@ -11,14 +11,14 @@ const toNumber = (value) => (value === null || value === undefined ? null : Numb
 // The cover image is the photo with the lowest position (0 = cover).
 // Exported for other modules that show listing cards (e.g. saved homes)
 export const SUMMARY_COLUMNS = `
-  l.id, l.title, l.type, l.price, l.district, l.lat, l.lng,
+  l.id, l.title, l.type, l.price, l.district, l.lat, l.lng, l.area_sqft,
   (l.tour_url IS NOT NULL) AS has_tour,
   (SELECT url FROM listing_images li
     WHERE li.listing_id = l.id
     ORDER BY li.position, li.id LIMIT 1) AS cover_image_url`;
 
 const DETAIL_COLUMNS = `${SUMMARY_COLUMNS},
-  l.description, l.address, l.bedrooms, l.bathrooms, l.area_sqft, l.status,
+  l.description, l.address, l.bedrooms, l.bathrooms, l.floors, l.status,
   l.tour_url, l.created_at, l.seller_id,
   u.full_name AS seller_full_name,
   COALESCE(
@@ -37,6 +37,7 @@ export function toSummary(row) {
     district: row.district,
     coverImageUrl: row.cover_image_url ?? null,
     hasTour: row.has_tour,
+    areaSqft: row.area_sqft, // null = not provided
     lat: row.lat,
     lng: row.lng,
   };
@@ -50,7 +51,7 @@ function toListing(row) {
     address: row.address,
     bedrooms: row.bedrooms,
     bathrooms: row.bathrooms,
-    areaSqft: row.area_sqft,
+    floors: row.floors,
     status: row.status,
     tourUrl: row.tour_url,
     images: row.images,
@@ -60,8 +61,8 @@ function toListing(row) {
 }
 
 // Search. Only live listings are shown to buyers.
-// filters: { q, type, district, minPrice, maxPrice, page } (already checked by the controller)
-export async function listListings({ q, type, district, minPrice, maxPrice, page }) {
+// filters: { q, type, district, minPrice, maxPrice, minArea, page } (checked by the controller)
+export async function listListings({ q, type, district, minPrice, maxPrice, minArea, page }) {
   // Build "WHERE ... AND ..." with $1, $2 parameters. User input never goes into the SQL text.
   const conditions = ["l.status = $1"];
   const params = [LISTING_STATUS.LIVE];
@@ -76,6 +77,7 @@ export async function listListings({ q, type, district, minPrice, maxPrice, page
   if (district) add("l.district = ?", district);
   if (minPrice !== undefined) add("l.price >= ?", minPrice);
   if (maxPrice !== undefined) add("l.price <= ?", maxPrice);
+  if (minArea !== undefined) add("l.area_sqft >= ?", minArea); // listings with no area are left out
 
   const where = conditions.join(" AND ");
 
@@ -187,6 +189,7 @@ const EDITABLE_COLUMNS = {
   bedrooms: "bedrooms",
   bathrooms: "bathrooms",
   areaSqft: "area_sqft",
+  floors: "floors",
 };
 
 // sellerId always comes from the logged in user (req.user.id), never from the request body.

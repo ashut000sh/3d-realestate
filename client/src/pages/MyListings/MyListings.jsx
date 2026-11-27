@@ -4,7 +4,7 @@
 //            request a 3D scan, and see saves and waiting bookings. Sellers only.
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { LISTING_STATUS, SCAN_STATUS } from "@realestate/shared";
+import { LISTING_STATUS, SCAN_STATUS, formatAreaShort } from "@realestate/shared";
 import Badge from "../../components/Badge.jsx";
 import Button from "../../components/Button.jsx";
 import EmptyState from "../../components/EmptyState.jsx";
@@ -99,6 +99,9 @@ function ListingRow({ item, onEdit, onScan, onPhotos, busy }) {
         </Link>
         <p className="font-semibold text-primary">{formatPrice(item.price, item.type)}</p>
         <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted">
+          <span className="flex items-center gap-1.5">
+            <Icon name="area" className="h-4 w-4" /> {formatAreaShort(item.areaSqft, item.district)}
+          </span>
           <span className="flex items-center gap-1.5">
             <Icon name="image" className="h-4 w-4" /> {item.imagesCount} photos
           </span>

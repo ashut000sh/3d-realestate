@@ -9,6 +9,7 @@ import Icon from "./Icon.jsx";
 import SaveButton from "./SaveButton.jsx";
 import { Skeleton } from "./Loader.jsx";
 import Photo from "./Photo.jsx";
+import { formatAreaShort } from "@realestate/shared";
 
 export default function ListingCard({ listing, compact = false }) {
   const cover = mediaUrl(listing.coverImageUrl);
@@ -55,6 +56,10 @@ export default function ListingCard({ listing, compact = false }) {
           <h3 className="line-clamp-1 font-semibold text-ink">{listing.title}</h3>
           <p className="mt-0.5 flex items-center gap-1 text-sm text-muted">
             <Icon name="pin" className="h-3.5 w-3.5" /> {listing.district}
+          </p>
+          <p className="mt-0.5 flex items-center gap-1 truncate text-sm text-muted">
+            <Icon name="area" className="h-3.5 w-3.5" />
+            {formatAreaShort(listing.areaSqft, listing.district)}
           </p>
         </div>
         <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-border text-muted transition group-hover:border-primary group-hover:bg-primary group-hover:text-white">
