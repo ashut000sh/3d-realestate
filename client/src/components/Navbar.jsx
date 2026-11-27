@@ -45,9 +45,10 @@ function CountBubble({ value, tone = "accent" }) {
   );
 }
 
+// Active page: ink text with a short gold underline (design v2: no filled pills in the nav)
 const navClass = ({ isActive }) =>
-  `relative flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition ${
-    isActive ? "text-ink bg-sand" : "text-muted hover:text-ink hover:bg-sand/60"
+  `relative flex h-16 items-center gap-1.5 px-3 text-small font-medium transition-colors after:absolute after:inset-x-3 after:bottom-0 after:h-0.5 after:rounded-full after:transition-colors ${
+    isActive ? "text-ink after:bg-accent" : "text-muted after:bg-transparent hover:text-ink"
   }`;
 
 function useCompareCount() {
@@ -73,7 +74,7 @@ function UserMenu({ user, onLogout, unread }) {
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-2 rounded-full border border-border bg-surface py-1 pr-3 pl-1 transition hover:shadow-[var(--shadow-soft)]"
+        className="flex h-10 items-center gap-2 rounded-full border border-border bg-surface py-1 pr-3 pl-1 transition-colors hover:border-muted/50"
         aria-expanded={open}
         aria-haspopup="menu"
       >
@@ -86,7 +87,7 @@ function UserMenu({ user, onLogout, unread }) {
       {open && (
         <div
           role="menu"
-          className="absolute right-0 mt-2 w-64 origin-top-right animate-scale-in rounded-2xl border border-border bg-surface p-2 shadow-[var(--shadow-lift)]"
+          className="absolute right-0 mt-2 w-64 origin-top-right animate-scale-in rounded-xl border border-border bg-surface p-2 shadow-[var(--shadow-float)]"
         >
           <div className="flex items-center gap-3 px-3 py-3">
             <Avatar name={user.fullName} />
@@ -95,9 +96,7 @@ function UserMenu({ user, onLogout, unread }) {
               <p className="truncate text-sm text-muted">{user.email}</p>
             </div>
           </div>
-          <p className="mx-3 mb-2 inline-flex rounded-full bg-accent-soft px-2 py-0.5 text-xs font-semibold text-accent-dark capitalize">
-            {user.role} account
-          </p>
+          <p className="mx-3 mb-2 text-small text-muted capitalize">{user.role} account</p>
           <div className="my-1 h-px bg-border" />
           {accountLinks(user.role).map((link) => (
             <Link
@@ -153,25 +152,24 @@ export default function Navbar() {
     navigate(ROUTES.HOME);
   }
 
-  const sellCta =
-    user?.role === ROLES.ADMIN ? (
-      <Button to={ROUTES.ADMIN} variant="dark" size="sm">
-        <Icon name="chart" className="h-4 w-4" /> Dashboard
-      </Button>
-    ) : (
-      <Button to={ROUTES.SCAN_REQUEST} variant="dark" size="sm">
-        <Icon name="plus" className="h-4 w-4" /> List your property
-      </Button>
-    );
+  // A quiet text link: the only filled button in the bar is "Sign up" (one primary per area)
+  const sellCta = (
+    <Link
+      to={user?.role === ROLES.ADMIN ? ROUTES.ADMIN : ROUTES.SCAN_REQUEST}
+      className="px-2 text-small font-medium text-text transition-colors hover:text-primary"
+    >
+      {user?.role === ROLES.ADMIN ? "Dashboard" : "List your property"}
+    </Link>
+  );
 
   return (
-    <header className="sticky top-0 z-[1000] border-b border-border/70 bg-background/80 backdrop-blur-xl">
-      <nav className="mx-auto flex h-16 max-w-7xl items-center gap-2 px-4 sm:px-6 lg:px-8">
+    <header className="sticky top-0 z-[1000] border-b border-border bg-background">
+      <nav className="mx-auto flex h-16 max-w-[75rem] items-center gap-2 px-4 sm:px-6 lg:px-8">
         <Link to={ROUTES.HOME} className="mr-4" aria-label="Aawas home">
           <Logo />
         </Link>
 
-        <div className="hidden items-center gap-1 md:flex">
+        <div className="hidden items-center md:flex">
           {LINKS.map((link) => (
             <NavLink key={link.to} to={link.to} className={navClass} end={link.to === ROUTES.HOME}>
               {link.label}
@@ -189,7 +187,7 @@ export default function Navbar() {
             <>
               <Link
                 to={ROUTES.LOGIN}
-                className="px-2 text-sm font-semibold text-ink hover:text-primary"
+                className="px-2 text-small font-medium text-text transition-colors hover:text-primary"
               >
                 Log in
               </Link>
@@ -201,7 +199,7 @@ export default function Navbar() {
         </div>
 
         <button
-          className="ml-auto flex h-10 w-10 items-center justify-center rounded-xl hover:bg-sand md:hidden"
+          className="-mr-2 ml-auto flex h-11 w-11 items-center justify-center rounded-lg hover:bg-sand md:hidden"
           onClick={() => setMobileOpen((v) => !v)}
           aria-label={mobileOpen ? "Close menu" : "Open menu"}
           aria-expanded={mobileOpen}
@@ -214,7 +212,7 @@ export default function Navbar() {
       {mobileOpen && (
         <div className="animate-fade-in border-t border-border bg-background px-4 pt-3 pb-6 md:hidden">
           {user && (
-            <div className="mb-3 flex items-center gap-3 rounded-2xl bg-surface p-3">
+            <div className="mb-3 flex items-center gap-3 border-b border-border px-3 pb-4">
               <Avatar name={user.fullName} />
               <div className="min-w-0">
                 <p className="truncate font-semibold">{user.fullName}</p>

@@ -8,6 +8,7 @@
 
   Look: "quiet luxury". Deep forest green + warm gold on an ivory page,
   a serif display face for headings and Inter for everything else.
+  The rules (type scale, spacing, radius, elevation, motion, banned list): docs/design/SYSTEM.md
 */
 @import "tailwindcss";
 
@@ -16,18 +17,19 @@
   --color-primary: #1d5b4c;
   --color-primary-dark: #123d33;
   --color-primary-soft: #e6efe9;
-  --color-ink: #0e2a23; /* darkest green: hero, footer, dark panels */
-  --color-accent: #c39a4b; /* gold */
+  --color-ink: #0e2a23; /* darkest green: the tour viewer and other dark surfaces */
+  --color-accent: #c39a4b; /* gold: marks, lines, focus, and text on ink only */
   --color-accent-dark: #a27d34;
+  --color-accent-ink: #7d5f22; /* gold TEXT on light backgrounds (5.6:1; plain gold is 2.5:1) */
   --color-accent-soft: #f6eedd;
 
   /* Neutrals */
   --color-surface: #ffffff;
   --color-background: #faf8f3; /* ivory page */
-  --color-sand: #f1ede3; /* subtle panels */
+  --color-sand: #f1ede3; /* skeletons and rare quiet fills */
   --color-text: #16201d;
-  --color-muted: #6c7470;
-  --color-border: #e8e3d8;
+  --color-muted: #5f6763; /* 5.5:1 on ivory, 5.0:1 on sand (was #6c7470: 4.1:1 on sand) */
+  --color-border: #e8e3d8; /* hairlines */
 
   /* Status */
   --color-danger: #b4382c;
@@ -43,21 +45,43 @@
   --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-display: "Fraunces", "Iowan Old Style", Georgia, serif;
 
-  /* Shape & depth */
-  --radius-card: 18px;
-  --shadow-soft: 0 1px 2px rgb(14 42 35 / 0.04), 0 8px 24px -12px rgb(14 42 35 / 0.12);
-  --shadow-lift: 0 2px 4px rgb(14 42 35 / 0.05), 0 24px 48px -20px rgb(14 42 35 / 0.28);
+  /* Type scale: six sizes only (docs/design/SYSTEM.md) */
+  --text-display: 3rem; /* 48: one per page */
+  --text-display--line-height: 1.08;
+  --text-display--letter-spacing: -0.03em;
+  --text-title: 2rem; /* 32: page titles, section headings */
+  --text-title--line-height: 1.19;
+  --text-title--letter-spacing: -0.02em;
+  --text-heading: 1.25rem; /* 20: sub-sections, prices */
+  --text-heading--line-height: 1.4;
+  --text-heading--letter-spacing: -0.01em;
+  --text-body: 1rem; /* 16 */
+  --text-body--line-height: 1.5;
+  --text-small: 0.875rem; /* 14 */
+  --text-small--line-height: 1.43;
+  --text-label: 0.75rem; /* 12: spaced uppercase, one per section at most */
+  --text-label--line-height: 1.33;
+  --text-label--letter-spacing: 0.12em;
 
-  /* Motion */
-  --animate-fade-up: fade-up 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
-  --animate-fade-in: fade-in 0.4s ease both;
-  --animate-scale-in: scale-in 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+  /* Shape & depth: 8px controls, 12px photos, 16px max for real cards and dialogs */
+  --radius-card: 16px;
+  /* One elevation level, for things that float over content (menus, dialogs, map cards) */
+  --shadow-float: 0 1px 2px rgb(14 42 35 / 0.06), 0 12px 32px -12px rgb(14 42 35 / 0.24);
+  --shadow-soft: none; /* surfaces don't get shadows any more (kept as a name for old code) */
+  --shadow-lift: var(--shadow-float);
+
+  /* Motion: UI 150-250 ms, page reveals 400-700 ms. No bounce, no loops. */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --animate-fade-up: fade-up 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+  --animate-fade-in: fade-in 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+  --animate-scale-in: scale-in 0.2s cubic-bezier(0.22, 1, 0.36, 1) both;
   --animate-shimmer: shimmer 1.6s linear infinite;
 
   @keyframes fade-up {
     from {
       opacity: 0;
-      transform: translateY(14px);
+      transform: translateY(8px);
     }
     to {
       opacity: 1;
@@ -124,25 +148,33 @@
 /* Shared class names every page can use. Add new ones here, not in pages. */
 @layer components {
   .page {
-    @apply mx-auto w-full max-w-7xl px-4 py-10 sm:px-6 lg:px-8;
+    @apply mx-auto w-full max-w-[75rem] px-4 py-10 sm:px-6 lg:px-8;
+  }
+  /* Page reveal: content fades in and rises 8px (MainLayout wraps each page in this) */
+  .page-enter {
+    animation: var(--animate-fade-up);
   }
   .page-title {
-    @apply font-display text-3xl font-medium tracking-tight text-ink sm:text-4xl;
+    @apply font-display text-[1.625rem] leading-8 font-medium tracking-[-0.02em] text-ink sm:text-title;
   }
   .eyebrow {
-    @apply text-xs font-semibold tracking-[0.18em] text-accent-dark uppercase;
+    @apply text-label font-semibold text-accent-ink uppercase;
   }
   .display {
-    @apply font-display font-medium tracking-tight;
+    @apply font-display font-medium tracking-[-0.02em];
   }
+  /* A real card (dialogs, the few floating panels). Sections are NOT cards. */
   .card {
-    @apply rounded-[var(--radius-card)] border border-border bg-surface p-5 shadow-[var(--shadow-soft)];
+    @apply rounded-[var(--radius-card)] border border-border bg-surface p-5;
   }
   .card-hover {
-    @apply transition duration-300 hover:-translate-y-0.5 hover:shadow-[var(--shadow-lift)];
+    @apply transition-colors duration-200 hover:border-muted/40;
+  }
+  .hairline {
+    @apply border-border;
   }
   .field {
-    @apply w-full rounded-xl border border-border bg-surface px-3.5 py-2.5 text-[15px] text-text transition outline-none placeholder:text-muted/70 hover:border-muted/40 focus:border-primary focus:ring-4 focus:ring-primary/10 disabled:bg-sand disabled:text-muted;
+    @apply w-full rounded-lg border border-border bg-surface px-3.5 py-2.5 text-body text-text transition-colors outline-none placeholder:text-muted hover:border-muted/50 focus:border-primary focus:ring-2 focus:ring-primary/15 disabled:bg-sand disabled:text-muted;
   }
   .field-error {
     @apply border-danger focus:border-danger focus:ring-danger/10;
@@ -162,15 +194,16 @@
     background-repeat: no-repeat;
     animation: var(--animate-shimmer);
   }
+  /* Solid dark panel for controls over the 3D tour (no glass blur: it's banned) */
   .glass {
-    @apply border border-white/15 bg-white/10 backdrop-blur-xl;
+    @apply border border-white/10 bg-ink/90;
   }
   .link {
     @apply font-medium text-primary underline-offset-4 hover:underline;
   }
+  /* Retired (decorative texture is banned). Kept as a no-op until every page drops it. */
   .grain {
-    background-image: radial-gradient(rgb(255 255 255 / 0.06) 1px, transparent 1px);
-    background-size: 3px 3px;
+    background-image: none;
   }
 }
 
@@ -180,8 +213,8 @@
   border-radius: inherit;
 }
 .leaflet-popup-content-wrapper {
-  border-radius: 14px;
-  box-shadow: var(--shadow-lift);
+  border-radius: 12px;
+  box-shadow: var(--shadow-float);
 }
 .leaflet-bar a {
   color: var(--color-ink);
@@ -205,7 +238,8 @@
   border-radius: 999px;
   background: var(--dot);
   opacity: 0.45;
-  animation: route-pulse 1.8s ease-out infinite;
+  /* Three pulses to say "you start here", then still (no looping decoration) */
+  animation: route-pulse 1.8s ease-out 3;
   z-index: -1;
 }
 @keyframes route-pulse {

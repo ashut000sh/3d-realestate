@@ -15,7 +15,8 @@ export default function MainLayout() {
   return (
     <div className="flex min-h-screen flex-col">
       <Navbar />
-      <div className="flex-1">
+      {/* key = path: each new page replays the short fade + 8px rise (none with reduced motion) */}
+      <div key={pathname} className="page-enter flex-1">
         <Outlet />
       </div>
       <Footer />

@@ -1,72 +1,63 @@
 // Site footer, shown on every page inside MainLayout.
+// Quiet on purpose (design v2): ivory, a hairline on top, small type. The page is the star.
 import { Link } from "react-router-dom";
 import { DISTRICTS } from "@realestate/shared";
 import { ROUTES } from "../constants/routes.js";
 import Logo from "./Logo.jsx";
 
+const COLUMNS = [
+  {
+    title: "Explore",
+    links: [
+      { to: `${ROUTES.SEARCH}?type=sale`, label: "Homes for sale" },
+      { to: `${ROUTES.SEARCH}?type=rent`, label: "Homes for rent" },
+      { to: `${ROUTES.SEARCH}?type=short_stay`, label: "Short stays" },
+    ],
+  },
+  {
+    title: "Districts",
+    links: DISTRICTS.map((district) => ({
+      to: `${ROUTES.SEARCH}?district=${district}`,
+      label: district,
+    })),
+  },
+  {
+    title: "Sell with us",
+    links: [
+      { to: ROUTES.SCAN_REQUEST, label: "List your property" },
+      { to: ROUTES.SIGNUP, label: "Create an account" },
+    ],
+  },
+];
+
 export default function Footer() {
   return (
-    <footer className="grain mt-24 bg-ink text-white/70">
-      <div className="mx-auto grid max-w-7xl gap-10 px-4 py-14 sm:px-6 md:grid-cols-[1.4fr_1fr_1fr_1fr] lg:px-8">
+    <footer className="mt-24 border-t border-border">
+      <div className="mx-auto grid max-w-[75rem] gap-10 px-4 py-12 sm:px-6 md:grid-cols-[1.5fr_1fr_1fr_1fr] lg:px-8">
         <div>
-          <Logo tone="light" />
-          <p className="mt-4 max-w-xs text-sm leading-relaxed">
-            Walk through homes across Nepal as true-to-scale 3D tours, before you ever step inside.
+          <Logo />
+          <p className="mt-3 max-w-xs text-small text-muted">
+            Homes across Nepal as true-to-scale 3D tours, scanned in person by our team.
           </p>
         </div>
-        <div>
-          <p className="mb-3 text-sm font-semibold text-white">Explore</p>
-          <ul className="space-y-2 text-sm">
-            <li>
-              <Link to={`${ROUTES.SEARCH}?type=sale`} className="hover:text-white">
-                Homes for sale
-              </Link>
-            </li>
-            <li>
-              <Link to={`${ROUTES.SEARCH}?type=rent`} className="hover:text-white">
-                Homes for rent
-              </Link>
-            </li>
-            <li>
-              <Link to={`${ROUTES.SEARCH}?type=short_stay`} className="hover:text-white">
-                Short stays
-              </Link>
-            </li>
-          </ul>
-        </div>
-        <div>
-          <p className="mb-3 text-sm font-semibold text-white">Districts</p>
-          <ul className="space-y-2 text-sm">
-            {DISTRICTS.map((district) => (
-              <li key={district}>
-                <Link to={`${ROUTES.SEARCH}?district=${district}`} className="hover:text-white">
-                  {district}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </div>
-        <div>
-          <p className="mb-3 text-sm font-semibold text-white">Sell with us</p>
-          <ul className="space-y-2 text-sm">
-            <li>
-              <Link to={ROUTES.SCAN_REQUEST} className="hover:text-white">
-                List your property
-              </Link>
-            </li>
-            <li>
-              <Link to={ROUTES.SIGNUP} className="hover:text-white">
-                Create an account
-              </Link>
-            </li>
-          </ul>
-        </div>
+        {COLUMNS.map((column) => (
+          <nav key={column.title} aria-label={column.title}>
+            <p className="text-small font-semibold text-text">{column.title}</p>
+            <ul className="mt-3 space-y-2 text-small text-muted">
+              {column.links.map((link) => (
+                <li key={link.label}>
+                  <Link to={link.to} className="transition-colors hover:text-primary">
+                    {link.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </nav>
+        ))}
       </div>
-      <div className="border-t border-white/10">
-        <p className="mx-auto max-w-7xl px-4 py-5 text-xs text-white/50 sm:px-6 lg:px-8">
-          © {new Date().getFullYear()} Aawas · Final Year Project, Presidential Graduate School
-        </p>
-      </div>
+      <p className="mx-auto max-w-[75rem] px-4 pb-8 text-small text-muted sm:px-6 lg:px-8">
+        © {new Date().getFullYear()} Aawas · Final Year Project, Presidential Graduate School
+      </p>
     </footer>
   );
 }

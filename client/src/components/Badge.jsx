@@ -8,7 +8,7 @@ const TONES = {
   warning: "bg-warning-soft text-warning",
   danger: "bg-danger-soft text-danger",
   info: "bg-info-soft text-info",
-  dark: "bg-ink/85 text-white backdrop-blur",
+  dark: "bg-ink/90 text-white",
 };
 
 export default function Badge({ tone = "neutral", dot = false, className = "", children }) {
