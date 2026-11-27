@@ -22,6 +22,9 @@ by `npm run db:migrate -w server`. Sample data: `npm run db:seed` (empties every
 
 `schema_migrations` (made by the migration runner) remembers which files already ran.
 
+Not in the database: **nearby places** (`GET /api/listings/:id/nearby`) come from OpenStreetMap and
+are cached in server memory for 24 hours, keyed by listing id and location. No table, no migration.
+
 ## How the tables connect
 
 ```mermaid
@@ -131,6 +134,10 @@ Only `live` listings appear in search and compare, and only their seller and adm
 | created_at | TIMESTAMPTZ | |
 
 Two confirmed stays on the same listing can't overlap (checked when booking and when confirming).
+
+The short-stay calendar (`GET /api/listings/:id/availability`) reads this table: stays that are
+`requested` or `confirmed` block their nights `date` … `check_out - 1`. Only the dates leave the
+server. No new columns or migration.
 
 ### listing_views
 
