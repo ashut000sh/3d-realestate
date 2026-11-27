@@ -99,3 +99,37 @@ Screenshots: `npm run shots` (1440×900 and 390×844, full page). "Before" set t
 ### Not found / Splash / Onboarding
 1. 404: giant serif numbers with a gold map pin badge stuck on, then a full dark footer.
 2. Onboarding/splash: illustration sits inside a 28px-radius green gradient tile.
+
+## After: batch 1 (Home, Search, Listing)
+
+Each page went through the screenshot → critique → fix loop at 1440 and 390 wide.
+
+### Site-wide (foundation commit)
+- Tokens: six-size type scale, 8/12/16px radii, one float shadow, motion tokens.
+- **Contrast fixes found while setting tokens:** muted text was 4.1:1 on sand (now `#5f6763`,
+  5.0–5.5:1); gold text was 2.5:1 (gold is now marks-only, gold text uses `#7d5f22`, 5.6:1).
+- Navbar: solid ivory, gold underline for the active page, one filled button ("Sign up").
+- Footer: ivory with a hairline instead of a dark block taller than short pages.
+- Cards lose their shadow; glass blur and grain texture retired; page reveal (fade + 8px rise).
+
+### Home (3 rounds)
+- Round 1: removed the marketing pill, stats, gradient and glow; photo-first hero with a caption;
+  hairline steps with a line-art illustration; district list; owner section without a banner.
+  *Critique:* search placeholder cut off; district names crowded their counts.
+- Round 2: wider search, counts under the names. *Critique (phone):* the hero photo was repeated
+  as the first featured card right below it; illustration lines got thicker when scaled up.
+- Round 3: featured list skips the hero home; illustrations keep a constant 1.5px line. Shipped.
+
+### Search (2 rounds)
+- Round 1: filters became a compact bar ("More filters" for price, area, verified sellers), results
+  in two wide photo-first columns, borderless map; card ↔ pin hover highlight; fade on new search.
+  *Critique:* wider container than the rest of the site, so edges didn't line up.
+- Round 2: back on the 1200px grid; aligned the Price and Minimum area labels. Shipped.
+  Phones: the first home now sits right under the filter bar (it was below eight boxed controls).
+
+### Listing (2 rounds)
+- Round 1: chip-free gallery at 12px; full-width title; one primary action (Open 3D tour), one
+  secondary (Book), a quiet row for chat/save/share/compare; facts as a hairline row; area card
+  unboxed; removed the dark "Walk through it in 3D" banner. On phones the price panel follows the
+  title. *Critique:* "Type: For sale" fact repeated the chip; nearby empty state still boxed.
+- Round 2: three facts; nearby messages unboxed. Shipped.
