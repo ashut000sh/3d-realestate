@@ -24,13 +24,18 @@ function tourFileUrl(tourUrl) {
   return tourUrl;
 }
 
-function ToolButton({ active, onClick, icon, label }) {
+function ToolButton({ active, onClick, icon, label, ariaLabel, disabled, hint }) {
   return (
     <button
       onClick={onClick}
       aria-pressed={active}
-      className={`flex flex-col items-center gap-1 rounded-xl px-3 py-2 text-[11px] font-semibold transition sm:min-w-20 ${
-        active ? "bg-accent text-ink" : "text-white/80 hover:bg-white/10 hover:text-white"
+      aria-label={ariaLabel ?? label}
+      disabled={disabled}
+      title={hint}
+      className={`flex flex-col items-center gap-1 rounded-xl px-2.5 py-2 text-[11px] font-semibold transition disabled:cursor-not-allowed disabled:opacity-35 sm:min-w-20 sm:px-3 ${
+        active
+          ? "bg-accent text-ink"
+          : "text-white/80 enabled:hover:bg-white/10 enabled:hover:text-white"
       }`}
     >
       <Icon name={icon} className="h-5 w-5" />
@@ -55,6 +60,10 @@ export default function Tour() {
   const [waitingSecondPoint, setWaitingSecondPoint] = useState(false);
   const [autoRotate, setAutoRotate] = useState(false);
   const [showHelp, setShowHelp] = useState(true);
+  // Floors view: levels found in the model ([] or 1 level = no Floors button)
+  const [levels, setLevels] = useState([]);
+  const [floors, setFloors] = useState({ exploded: false, focusedLevel: null });
+  const hasFloors = levels.length > 1;
 
   useEffect(() => {
     let cancelled = false;
@@ -86,6 +95,8 @@ export default function Tour() {
         setMeasurements(list);
         setWaitingSecondPoint(waiting);
       },
+      onLevels: setLevels,
+      onFloorsChange: setFloors,
     });
     viewer.load(tourFileUrl(tourUrl));
     viewerRef.current = viewer;
@@ -110,6 +121,34 @@ export default function Tour() {
     setAutoRotate(next);
     viewerRef.current?.setAutoRotate(next);
   }
+
+  // Floors apart / together. Measuring is switched off while apart, so distances stay true.
+  function toggleFloors() {
+    const viewer = viewerRef.current;
+    if (!viewer || !hasFloors) return;
+    if (!floors.exploded && measuring) {
+      setMeasuring(false);
+      viewer.setMeasuring(false);
+    }
+    viewer.setExploded(!floors.exploded);
+  }
+
+  // Keyboard: F toggles the floors, Escape puts them back together
+  useEffect(() => {
+    if (!hasFloors) return undefined;
+    const onKey = (event) => {
+      if (event.ctrlKey || event.metaKey || event.altKey) return;
+      if (event.target.closest?.("input, textarea, select, [contenteditable]")) return;
+      if (event.key === "f" || event.key === "F") {
+        event.preventDefault();
+        toggleFloors();
+      } else if (event.key === "Escape" && floors.exploded) {
+        viewerRef.current?.setExploded(false);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  });
 
   function toggleFullscreen() {
     if (document.fullscreenElement) document.exitFullscreen();
@@ -220,6 +259,7 @@ export default function Tour() {
             <li>Drag to rotate · Right-drag to move</li>
             <li>Scroll or pinch to zoom</li>
             <li>Use Measure, then click two points</li>
+            {hasFloors && <li>Floors (or F) shows each storey on its own</li>}
           </ul>
         </div>
       )}
@@ -273,19 +313,88 @@ export default function Tour() {
 
       {/* Toolbar */}
       {modelState === "ready" && (
-        <nav className="glass absolute bottom-4 left-1/2 z-20 flex -translate-x-1/2 animate-fade-up items-center gap-1 rounded-2xl p-1.5 sm:bottom-6">
-          <ToolButton icon="ruler" label="Measure" active={measuring} onClick={toggleMeasure} />
-          <ToolButton icon="rotate" label="Rotate" active={autoRotate} onClick={toggleRotate} />
-          <ToolButton icon="scan" label="Reset" onClick={() => viewerRef.current?.resetView()} />
-          <ToolButton icon="expand" label="Full" onClick={toggleFullscreen} />
-          <span className="mx-1 h-8 w-px bg-white/15" />
-          <Link
-            to={buildRoute(ROUTES.BOOKING, { id })}
-            className="flex items-center gap-2 rounded-xl bg-accent px-4 py-3 text-sm font-semibold text-ink transition hover:bg-white"
-          >
-            <Icon name="calendar" className="h-4 w-4" />
-            <span className="hidden sm:inline">Book a visit</span>
-          </Link>
+        <nav
+          aria-label="Tour tools"
+          className="glass absolute bottom-4 left-1/2 z-20 flex max-w-[calc(100vw-1.5rem)] -translate-x-1/2 animate-fade-up flex-col items-center gap-1 rounded-2xl p-1.5 sm:bottom-6"
+        >
+          {/* Level chips, while the floors are apart */}
+          {hasFloors && floors.exploded && (
+            <div
+              role="group"
+              aria-label="Show one level"
+              className="flex max-w-full animate-fade-up gap-1 overflow-x-auto px-1 pt-0.5 pb-1"
+            >
+              {[
+                { number: null, label: "All" },
+                ...levels.map((l) => ({ ...l, label: `L${l.number}` })),
+              ].map((level, i) => {
+                const index = level.number === null ? null : i - 1;
+                const on = floors.focusedLevel === index;
+                return (
+                  <button
+                    key={level.label}
+                    type="button"
+                    aria-pressed={on}
+                    aria-label={
+                      level.number === null
+                        ? "Show all levels"
+                        : `Show only level ${level.number}, ${level.name}`
+                    }
+                    onClick={() => viewerRef.current?.focusLevel(index)}
+                    className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold transition ${
+                      on ? "bg-accent text-ink" : "bg-white/10 text-white/80 hover:bg-white/20"
+                    }`}
+                  >
+                    {level.label}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+          <div className="flex items-center gap-1">
+            <ToolButton
+              icon="ruler"
+              label="Measure"
+              active={measuring}
+              onClick={toggleMeasure}
+              disabled={floors.exploded}
+              hint={floors.exploded ? "Collapse floors to measure" : undefined}
+              ariaLabel={floors.exploded ? "Measure (collapse floors to measure)" : "Measure"}
+            />
+            <ToolButton icon="rotate" label="Rotate" active={autoRotate} onClick={toggleRotate} />
+            {hasFloors && (
+              <ToolButton
+                icon="floors"
+                label="Floors"
+                active={floors.exploded}
+                onClick={toggleFloors}
+                ariaLabel={
+                  floors.exploded ? "Put the floors back together (F)" : "Separate the floors (F)"
+                }
+                hint="Separate the floors (F)"
+              />
+            )}
+            <ToolButton
+              icon="scan"
+              label="Reset"
+              ariaLabel="Reset the view"
+              onClick={() => viewerRef.current?.resetView()}
+            />
+            <ToolButton
+              icon="expand"
+              label="Full"
+              ariaLabel="Full screen"
+              onClick={toggleFullscreen}
+            />
+            <span className="mx-1 h-8 w-px bg-white/15" />
+            <Link
+              to={buildRoute(ROUTES.BOOKING, { id })}
+              className="flex items-center gap-2 rounded-xl bg-accent px-4 py-3 text-sm font-semibold text-ink transition hover:bg-white"
+            >
+              <Icon name="calendar" className="h-4 w-4" />
+              <span className="hidden sm:inline">Book a visit</span>
+            </Link>
+          </div>
         </nav>
       )}
     </main>

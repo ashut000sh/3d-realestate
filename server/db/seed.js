@@ -44,15 +44,18 @@ const TOUR_BY_KIND = {
   apartment: "/tours/apartment.glb",
   room: "/tours/room.glb",
   office: "/tours/office.glb",
+  // Multi-storey, for the tour's "Floors" view (npm run tours makes them):
+  twoStorey: "/tours/house-two-storey.glb", // levels named Level_1 / Level_2
+  townhouse: "/tours/townhouse.glb", // 3 storeys, unnamed: levels are auto-detected
 };
 // Listing title -> kind of tour
 const TOUR_KIND = {
-  "3BHK house in Budhanilkantha": "house",
+  "3BHK house in Budhanilkantha": "twoStorey",
   "2BHK flat in Baluwatar": "apartment",
   "Thamel studio for travellers": "room",
   "Bungalow in Bhaisepati": "house",
   "Office floor in Pulchowk": "office",
-  "Newari house in Patan": "house",
+  "Newari house in Patan": "townhouse",
   "Heritage homestay near Durbar Square": "room",
   "Family flat in Suryabinayak": "apartment",
   "Land with small house in Thimi": "house",
