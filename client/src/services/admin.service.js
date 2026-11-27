@@ -21,3 +21,7 @@ export const uploadTour = (id, file) => {
     (d) => d.tourUrl,
   );
 };
+
+export const getInsights = () => request("GET", API.ADMIN.INSIGHTS);
+export const getAllBookings = (status) =>
+  request("GET", API.ADMIN.BOOKINGS, { query: { status } }).then((d) => d.items);

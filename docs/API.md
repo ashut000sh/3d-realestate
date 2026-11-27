@@ -46,7 +46,7 @@ Listing = {                     // full details on the Listing screen
   tourUrl: "https://.../tour.glb",   // null until a scan is published
   images: ["https://...", "https://..."],
   seller: { id: 4, fullName: "Ram Thapa" },
-  createdAt: "..."
+  createdAt: "...",
 }
 
 ScanRequest = {
@@ -58,7 +58,7 @@ ScanRequest = {
   scheduledFor: null,           // set by admin
   notes: "Gate code 1234",
   status: "pending",            // SCAN_STATUS
-  createdAt: "..."
+  createdAt: "...",
 }
 
 Booking = {
@@ -70,7 +70,9 @@ Booking = {
   checkOut: null,               // only for kind "stay"
   message: "Can I come after 4pm?",
   status: "requested",          // BOOKING_STATUS
-  createdAt: "..."
+  createdAt: "...",
+  listing: { id, title, type, district, price, coverImageUrl },  // so screens never show bare ids
+  userFullName,  // who booked (for the seller)
 }
 
 Conversation = {
@@ -86,7 +88,7 @@ Message = {
   conversationId: 2,
   senderId: 7,
   body: "Is the price negotiable?",
-  createdAt: "..."
+  createdAt: "...",
 }
 ```
 
@@ -97,7 +99,7 @@ Message = {
 | Constant | Method & path | Who can call | Request | Response |
 |---|---|---|---|---|
 | `API.AUTH.SIGNUP` | `POST /api/auth/signup` | public | `{ fullName, email, phone, password, role: "buyer" \| "seller" }` | `201 { userId, otpSentTo }` |
-| `API.AUTH.VERIFY_OTP` | `POST /api/auth/verify-otp` | public | `{ userId, otp }` | `200 { token, user: User }` |
+| `API.AUTH.VERIFY_OTP` | `POST /api/auth/verify-otp` | public | `{ userId, otp }` | `200 { token, user: User }` · wrong code `400` (says how many tries are left) · 5 wrong codes use the code up: `429`, ask for a new one |
 | `API.AUTH.RESEND_OTP` | `POST /api/auth/resend-otp` | public | `{ userId }` | `200 { otpSentTo }` |
 | `API.AUTH.LOGIN` | `POST /api/auth/login` | public | `{ email, password }` | `200 { token, user: User }` · `401` wrong email or password · `403 { error, userId }` email not verified |
 | `API.AUTH.ME` | `GET /api/auth/me` | logged in | `-` | `200 { user: User }` |
@@ -108,7 +110,8 @@ Message = {
 |---|---|---|---|---|
 | `API.LISTINGS.LIST` | `GET /api/listings` | public | `query: ?q, type, minPrice, maxPrice, district, page` | `200 { items: ListingSummary[], page, total }` |
 | `API.LISTINGS.COMPARE` | `GET /api/listings/compare` | public | `query: ?ids=1,2,3 (max 3)` | `200 { items: Listing[] }` |
-| `API.LISTINGS.ONE` | `GET /api/listings/:id` | public | `-` | `200 { listing: Listing }` |
+| `API.LISTINGS.MINE` | `GET /api/listings/mine` | seller | `-` | `200 { items: MyListing[] }` every status, newest first. `MyListing` = `ListingSummary` + `status`, `createdAt`, `imagesCount`, `scanStatus` (latest request or `null`), `pendingBookings`, `saves` |
+| `API.LISTINGS.ONE` | `GET /api/listings/:id` | public | `-` | `200 { listing: Listing }` · listings that aren't `live` answer `404` except to their seller and admins (send the token if you have one) |
 | `API.LISTINGS.CREATE` | `POST /api/listings` | seller | `{ title, description, type, price, district, address, lat, lng, bedrooms, bathrooms, areaSqft }` | `201 { listing: Listing }` |
 | `API.LISTINGS.UPLOAD_IMAGES` | `POST /api/listings/:id/images` | owner seller | `multipart/form-data: images (1 to 10 .jpg/.png, max 5 MB each)` | `200 { images: string[] }` |
 | `API.LISTINGS.UPDATE` | `PATCH /api/listings/:id` | owner seller | `any CREATE fields` | `200 { listing: Listing }` |
@@ -143,10 +146,22 @@ Message = {
 | Constant | Method & path | Who can call | Request | Response |
 |---|---|---|---|---|
 | `API.ADMIN.STATS` | `GET /api/admin/stats` | admin | `-` | `200 { listings, users, pendingScans, bookingsThisWeek }` |
-| `API.ADMIN.SCAN_QUEUE` | `GET /api/admin/scan-requests` | admin | `query: ?status` | `200 { items: ScanRequest[] }` |
+| `API.ADMIN.SCAN_QUEUE` | `GET /api/admin/scan-requests` | admin | `query: ?status` | `200 { items: ScanRequest[] }` · each item also has `sellerFullName` (for the dashboard's seller column) |
 | `API.ADMIN.USERS` | `GET /api/admin/users` | admin | `query: ?role` | `200 { items: User[] }` |
+| `API.ADMIN.INSIGHTS` | `GET /api/admin/insights` | admin | `-` | `200 { listingsByDistrict: [{ district, total, live }], listingsByType: [{ type, count, avgPrice }], listingsByStatus: [{ status, count }], weekly: [{ weekStart, signups, bookings, listings }] (last 8 weeks, oldest first), scanFunnel: [{ status, count }], bookingsByStatus: [{ status, count }], topListings: [{ id, title, district, type, saves, bookings, chats }] (top 5 live), totals: { withTour, unverifiedUsers, messagesThisWeek, saves } }` |
+| `API.ADMIN.BOOKINGS` | `GET /api/admin/bookings` | admin | `query: ?status` | `200 { items: Booking[] }` newest first, max 200; each also has `sellerFullName` |
 
 ---
+
+
+## SAVED  ·  `server/src/modules/saved/`
+
+| Constant | Method + URL | Who | Send | Get back |
+|---|---|---|---|---|
+| `API.SAVED.LIST` | `GET /api/saved` | logged in | `-` | `200 { items: ListingSummary[] }` newest saved first, live listings only |
+| `API.SAVED.IDS` | `GET /api/saved/ids` | logged in | `-` | `200 { ids: number[] }` (to fill the hearts) |
+| `API.SAVED.ADD` | `POST /api/saved` | logged in | `{ listingId }` | `201 { listingId }` · live listings only (else `404`) · saving twice is fine |
+| `API.SAVED.REMOVE` | `DELETE /api/saved/:listingId` | logged in | `-` | `200 { listingId }` |
 
 ## Live chat (Socket.IO)
 

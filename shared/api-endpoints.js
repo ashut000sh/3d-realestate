@@ -13,6 +13,7 @@ export const API = {
   LISTINGS: {
     LIST: "/api/listings",
     COMPARE: "/api/listings/compare",
+    MINE: "/api/listings/mine",
     ONE: "/api/listings/:id",
     CREATE: "/api/listings",
     UPDATE: "/api/listings/:id",
@@ -34,10 +35,18 @@ export const API = {
     START: "/api/chat/conversations",
     MESSAGES: "/api/chat/conversations/:id/messages",
   },
+  SAVED: {
+    LIST: "/api/saved",
+    IDS: "/api/saved/ids",
+    ADD: "/api/saved",
+    REMOVE: "/api/saved/:listingId",
+  },
   ADMIN: {
     STATS: "/api/admin/stats",
     SCAN_QUEUE: "/api/admin/scan-requests",
     USERS: "/api/admin/users",
+    INSIGHTS: "/api/admin/insights",
+    BOOKINGS: "/api/admin/bookings",
   },
 };
 

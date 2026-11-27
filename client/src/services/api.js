@@ -34,6 +34,7 @@ export async function request(method, path, { body, query } = {}) {
   if (!res.ok) {
     const error = new Error(data.error ?? `Request failed (${res.status})`);
     error.status = res.status;
+    error.data = data; // extra fields, e.g. login's 403 { error, userId }
     throw error;
   }
   return data;

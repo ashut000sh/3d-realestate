@@ -5,40 +5,184 @@
   Design tokens: define a color/font ONCE in @theme and Tailwind makes classes for it.
     --color-primary  ->  bg-primary, text-primary, border-primary
   Never paste a hex code into a component. Add a token here instead.
+
+  Look: "quiet luxury". Deep forest green + warm gold on an ivory page,
+  a serif display face for headings and Inter for everything else.
 */
 @import "tailwindcss";
 
 @theme {
-  --color-primary: #1f6f5c;
-  --color-primary-dark: #15503f;
-  --color-accent: #e8a33d;
-  --color-surface: #ffffff;
-  --color-background: #f5f4f0;
-  --color-text: #1c1c1a;
-  --color-muted: #6b6a64;
-  --color-border: #e2e0d8;
-  --color-danger: #c0392b;
-  --color-success: #2e8b57;
+  /* Brand */
+  --color-primary: #1d5b4c;
+  --color-primary-dark: #123d33;
+  --color-primary-soft: #e6efe9;
+  --color-ink: #0e2a23; /* darkest green: hero, footer, dark panels */
+  --color-accent: #c39a4b; /* gold */
+  --color-accent-dark: #a27d34;
+  --color-accent-soft: #f6eedd;
 
-  --font-sans: "Inter", system-ui, sans-serif;
-  --radius-card: 12px;
+  /* Neutrals */
+  --color-surface: #ffffff;
+  --color-background: #faf8f3; /* ivory page */
+  --color-sand: #f1ede3; /* subtle panels */
+  --color-text: #16201d;
+  --color-muted: #6c7470;
+  --color-border: #e8e3d8;
+
+  /* Status */
+  --color-danger: #b4382c;
+  --color-danger-soft: #fbecea;
+  --color-success: #2f7d55;
+  --color-success-soft: #e5f3ea;
+  --color-warning: #b7791f;
+  --color-warning-soft: #fdf3e1;
+  --color-info: #2c5f8a;
+  --color-info-soft: #e7f0f8;
+
+  /* Type */
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-display: "Fraunces", "Iowan Old Style", Georgia, serif;
+
+  /* Shape & depth */
+  --radius-card: 18px;
+  --shadow-soft: 0 1px 2px rgb(14 42 35 / 0.04), 0 8px 24px -12px rgb(14 42 35 / 0.12);
+  --shadow-lift: 0 2px 4px rgb(14 42 35 / 0.05), 0 24px 48px -20px rgb(14 42 35 / 0.28);
+
+  /* Motion */
+  --animate-fade-up: fade-up 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+  --animate-fade-in: fade-in 0.4s ease both;
+  --animate-scale-in: scale-in 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+  --animate-shimmer: shimmer 1.6s linear infinite;
+
+  @keyframes fade-up {
+    from {
+      opacity: 0;
+      transform: translateY(14px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  @keyframes scale-in {
+    from {
+      opacity: 0;
+      transform: scale(0.96);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  @keyframes shimmer {
+    from {
+      background-position: -400px 0;
+    }
+    to {
+      background-position: 400px 0;
+    }
+  }
 }
 
 @layer base {
+  html {
+    scroll-behavior: smooth;
+  }
   body {
     @apply bg-background text-text font-sans antialiased;
+    font-feature-settings: "cv11", "ss01";
+  }
+  h1,
+  h2,
+  h3 {
+    @apply text-balance;
+  }
+  ::selection {
+    @apply bg-accent-soft text-ink;
+  }
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-accent;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
   }
 }
 
 /* Shared class names every page can use. Add new ones here, not in pages. */
 @layer components {
   .page {
-    @apply mx-auto max-w-6xl px-4 py-8;
+    @apply mx-auto w-full max-w-7xl px-4 py-10 sm:px-6 lg:px-8;
   }
   .page-title {
-    @apply text-2xl font-semibold;
+    @apply font-display text-3xl font-medium tracking-tight text-ink sm:text-4xl;
+  }
+  .eyebrow {
+    @apply text-xs font-semibold tracking-[0.18em] text-accent-dark uppercase;
+  }
+  .display {
+    @apply font-display font-medium tracking-tight;
   }
   .card {
-    @apply bg-surface border border-border rounded-[var(--radius-card)] p-4;
+    @apply rounded-[var(--radius-card)] border border-border bg-surface p-5 shadow-[var(--shadow-soft)];
   }
+  .card-hover {
+    @apply transition duration-300 hover:-translate-y-0.5 hover:shadow-[var(--shadow-lift)];
+  }
+  .field {
+    @apply w-full rounded-xl border border-border bg-surface px-3.5 py-2.5 text-[15px] text-text transition outline-none placeholder:text-muted/70 hover:border-muted/40 focus:border-primary focus:ring-4 focus:ring-primary/10 disabled:bg-sand disabled:text-muted;
+  }
+  .field-error {
+    @apply border-danger focus:border-danger focus:ring-danger/10;
+  }
+  .label {
+    @apply mb-1.5 block text-sm font-medium text-text;
+  }
+  .skeleton {
+    @apply rounded-lg bg-sand;
+    background-image: linear-gradient(
+      90deg,
+      transparent 0,
+      rgb(255 255 255 / 0.65) 50%,
+      transparent 100%
+    );
+    background-size: 400px 100%;
+    background-repeat: no-repeat;
+    animation: var(--animate-shimmer);
+  }
+  .glass {
+    @apply border border-white/15 bg-white/10 backdrop-blur-xl;
+  }
+  .link {
+    @apply font-medium text-primary underline-offset-4 hover:underline;
+  }
+  .grain {
+    background-image: radial-gradient(rgb(255 255 255 / 0.06) 1px, transparent 1px);
+    background-size: 3px 3px;
+  }
+}
+
+/* Leaflet: match the map controls and popups to the brand */
+.leaflet-container {
+  font-family: var(--font-sans);
+  border-radius: inherit;
+}
+.leaflet-popup-content-wrapper {
+  border-radius: 14px;
+  box-shadow: var(--shadow-lift);
+}
+.leaflet-bar a {
+  color: var(--color-ink);
 }

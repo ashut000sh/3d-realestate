@@ -10,5 +10,7 @@ const router = Router();
 router.get(API.ADMIN.STATS, requireAuth, requireRole(ROLES.ADMIN), controller.stats);
 router.get(API.ADMIN.SCAN_QUEUE, requireAuth, requireRole(ROLES.ADMIN), controller.scanQueue);
 router.get(API.ADMIN.USERS, requireAuth, requireRole(ROLES.ADMIN), controller.users);
+router.get(API.ADMIN.INSIGHTS, requireAuth, requireRole(ROLES.ADMIN), controller.insights);
+router.get(API.ADMIN.BOOKINGS, requireAuth, requireRole(ROLES.ADMIN), controller.bookings);
 
 export default router;
