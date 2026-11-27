@@ -20,3 +20,5 @@ export const uploadListingImages = (id, files) => {
 export const getMyListings = () => request("GET", API.LISTINGS.MINE).then((d) => d.items);
 export const updateListing = (id, fields) =>
   request("PATCH", buildPath(API.LISTINGS.UPDATE, { id }), { body: fields }).then((d) => d.listing);
+// { items: [{ category, name, lat, lng, distanceMeters }], message } — never fails on Overpass outages
+export const getNearbyPlaces = (id) => request("GET", buildPath(API.LISTINGS.NEARBY, { id }));

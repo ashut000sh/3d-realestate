@@ -90,6 +90,14 @@ Message = {
   body: "Is the price negotiable?",
   createdAt: "...",
 }
+
+NearbyPlace = {          // from OpenStreetMap, within NEARBY.RADIUS_METERS (1000 m)
+  category: "bus_stop",  // one of NEARBY_CATEGORY: school | health | pharmacy | bus_stop | worship | market | bank
+  name: "Kamalpokhari Bus Stop",  // OSM English name, else local name, else e.g. "Bus stop"
+  lat: 27.7101,
+  lng: 85.3262,
+  distanceMeters: 220    // straight line from the listing, rounded
+}
 ```
 
 ---
@@ -163,6 +171,20 @@ Message = {
 | `API.SAVED.ADD` | `POST /api/saved` | logged in | `{ listingId }` | `201 { listingId }` · live listings only (else `404`) · saving twice is fine |
 | `API.SAVED.REMOVE` | `DELETE /api/saved/:listingId` | logged in | `-` | `200 { listingId }` |
 
+## NEARBY  ·  `server/src/modules/nearby/`
+
+| Constant | Method + URL | Who | Send | Get back |
+|---|---|---|---|---|
+| `API.LISTINGS.NEARBY` | `GET /api/listings/:id/nearby` | anyone (same visibility as `GET /api/listings/:id`: live, or the seller's own / admin) | `-` | `200 { items: NearbyPlace[], message: string \| null }` nearest first, at most `NEARBY.MAX_PER_CATEGORY` (10) per category · `404` if the listing can't be seen |
+
+- The **server** asks the OpenStreetMap Overpass API (never the browser). Servers in `OVERPASS_URLS`
+  (optional env, comma-separated) are tried one after another within `NEARBY.TIMEOUT_MS` (8 s) in total.
+- Results are cached in server memory per listing (and location) for `NEARBY.CACHE_HOURS` (24 h).
+  A failed lookup is cached for `NEARBY.FAILED_CACHE_MINUTES` (10 min) so a slow Overpass isn't hammered.
+- Overpass down or slow is **not** an error: `200 { items: [], message: "Nearby places are unavailable right now..." }`.
+- Listing without `lat`/`lng`: `200 { items: [], message: "This home has no map location yet." }`.
+- The cache lives in memory: it empties when the server restarts and isn't shared between server instances.
+
 ## Live chat (Socket.IO)
 
 Connect to the same server URL. Event names are in `shared/socket-events.js`.
@@ -185,3 +207,4 @@ Add a line whenever this contract changes, so the other side knows to update.
 |---|---|---|
 | 2026-10-11 | M1 | First version |
 | 2026-11-22 | M1 | Added `API.LISTINGS.UPLOAD_IMAGES` (listing photos) and `?as=seller` on `API.BOOKINGS.MINE`; documented the login 401/403 errors |
+| 2026-11-26 | M1 | Added `API.LISTINGS.NEARBY` (nearby places from OpenStreetMap) and the `NearbyPlace` shape |
