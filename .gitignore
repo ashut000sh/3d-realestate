@@ -9,3 +9,6 @@ dist/
 *.obj
 *.usdz
 *.ply
+
+# Design screenshots (npm run shots)
+.shots/
