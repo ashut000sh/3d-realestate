@@ -35,6 +35,7 @@ ListingSummary = {             // used in lists and search results (smaller, fas
   district: "Kathmandu",
   coverImageUrl: "https://...",
   hasTour: true,
+  areaSqft: 2100,               // null = not provided. Local units: shared/area.js
   tourVerified: true,           // badge: the listing has a PUBLISHED scan (our team scanned it)
   sellerVerified: false,        // badge: an admin checked the seller's documents in person
   lat: 27.7654, lng: 85.3651
@@ -45,6 +46,7 @@ Listing = {                     // full details on the Listing screen
   description: "...",
   address: "Ward 6, Budhanilkantha",
   bedrooms: 3, bathrooms: 2, areaSqft: 2100,
+  floors: 2,                    // 1-10 (FLOORS), default 1
   status: "live",               // LISTING_STATUS
   tourUrl: "https://.../tour.glb",   // null until a scan is published
   images: ["https://...", "https://..."],
@@ -121,11 +123,11 @@ NearbyPlace = {          // from OpenStreetMap, within NEARBY.RADIUS_METERS (100
 
 | Constant | Method & path | Who can call | Request | Response |
 |---|---|---|---|---|
-| `API.LISTINGS.LIST` | `GET /api/listings` | public | `query: ?q, type, minPrice, maxPrice, district, verifiedSeller (true = verified sellers only), page` | `200 { items: ListingSummary[], page, total }` |
+| `API.LISTINGS.LIST` | `GET /api/listings` | public | `query: ?q, type, minPrice, maxPrice, district, minArea (sq ft; homes with no area are left out), verifiedSeller (true = verified sellers only), page` | `200 { items: ListingSummary[], page, total }` |
 | `API.LISTINGS.COMPARE` | `GET /api/listings/compare` | public | `query: ?ids=1,2,3 (max 3)` | `200 { items: Listing[] }` |
 | `API.LISTINGS.MINE` | `GET /api/listings/mine` | seller | `-` | `200 { items: MyListing[] }` every status, newest first. `MyListing` = `ListingSummary` + `status`, `createdAt`, `imagesCount`, `scanStatus` (latest request or `null`), `pendingBookings`, `saves` |
 | `API.LISTINGS.ONE` | `GET /api/listings/:id` | public | `-` | `200 { listing: Listing }` · listings that aren't `live` answer `404` except to their seller and admins (send the token if you have one) |
-| `API.LISTINGS.CREATE` | `POST /api/listings` | seller | `{ title, description, type, price, district, address, lat, lng, bedrooms, bathrooms, areaSqft }` | `201 { listing: Listing }` |
+| `API.LISTINGS.CREATE` | `POST /api/listings` | seller | `{ title, description, type, price, district, address, lat, lng, bedrooms, bathrooms, areaSqft, floors? }` (floors 1-10, default 1) | `201 { listing: Listing }` |
 | `API.LISTINGS.UPLOAD_IMAGES` | `POST /api/listings/:id/images` | owner seller | `multipart/form-data: images (1 to 10 .jpg/.png, max 5 MB each)` | `200 { images: string[] }` |
 | `API.LISTINGS.UPDATE` | `PATCH /api/listings/:id` | owner seller | `any CREATE fields` | `200 { listing: Listing }` |
 
@@ -271,3 +273,4 @@ Add a line whenever this contract changes, so the other side knows to update.
 | 2026-11-26 | M1 | Added `API.LISTINGS.RECORD_VIEW` and `API.LISTINGS.MINE_STATS` (seller stats) |
 | 2026-11-26 | M1 | Trust badges: `tourVerified` / `sellerVerified` on listings and conversations, `?verifiedSeller` search filter, `API.ADMIN.VERIFY_SELLER` / `UNVERIFY_SELLER` |
 | 2026-11-26 | M1 | Added `SHARE.LISTING` (`GET /share/listings/:id`, HTML link-preview page) and the `PUBLIC_SERVER_URL` env setting |
+| 2026-11-27 | M1 | `areaSqft` on ListingSummary, `floors` on Listing (create/update too), `?minArea` search filter. Area units (ropani-aana, bigha-kattha-dhur) are worked out from sq ft with `shared/area.js`; the API stays in sq ft |

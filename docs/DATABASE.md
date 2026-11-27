@@ -20,6 +20,7 @@ by `npm run db:migrate -w server`. Sample data: `npm run db:seed` (empties every
 | `004_saved_listings.sql` | `saved_listings`: each user's saved homes (the heart button) |
 | `005_listing_views.sql` | `listing_views`: listing page views and 3D tour opens (seller stats) |
 | `006_seller_verification.sql` | `users.seller_verified_at` and `seller_verified_by` ("Verified seller" badge) |
+| `007_listing_floors.sql` | `listings.floors` (1 to 10, default 1) for the area card |
 
 `schema_migrations` (made by the migration runner) remembers which files already ran.
 
@@ -95,7 +96,8 @@ Only the newest unused, unexpired code counts, so "Resend" makes older codes use
 | district | TEXT | one of `DISTRICTS` |
 | address | TEXT | |
 | lat, lng | DOUBLE PRECISION | for the maps; optional |
-| bedrooms, bathrooms, area_sqft | INT | optional |
+| bedrooms, bathrooms, area_sqft | INT | optional. Area is stored in **sq ft only**; ropani-aana and bigha-kattha-dhur are worked out on the fly (`shared/area.js`) |
+| floors | INT | 1 to 10, default 1 (`FLOORS` in shared/constants.js). Added in `007_listing_floors.sql` |
 | tour_url | TEXT | `/uploads/tours/<id>.glb`, set when the 3D tour is published |
 | created_at | TIMESTAMPTZ | |
 

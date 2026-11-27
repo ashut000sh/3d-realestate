@@ -5,7 +5,7 @@
 // Job:       Side-by-side table of up to 3 properties chosen with "Add to compare".
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { LIMITS } from "@realestate/shared";
+import { LIMITS, formatAreaShort } from "@realestate/shared";
 import Button from "../../components/Button.jsx";
 import EmptyState from "../../components/EmptyState.jsx";
 import Icon from "../../components/Icon.jsx";
@@ -30,9 +30,9 @@ const ROWS = [
   { label: "Bathrooms", cell: (l) => show(l.bathrooms) },
   {
     label: "Area",
-    cell: (l) =>
-      l.areaSqft === null ? "–" : `${new Intl.NumberFormat("en-IN").format(l.areaSqft)} sq ft`,
+    cell: (l) => formatAreaShort(l.areaSqft, l.district),
   },
+  { label: "Floors", cell: (l) => show(l.floors) },
   {
     label: "3D tour",
     cell: (l) =>

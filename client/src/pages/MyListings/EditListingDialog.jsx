@@ -1,14 +1,14 @@
 // Pop-up to edit a listing's details (PATCH /api/listings/:id). Owner seller only.
 // Only fields that changed are sent.
 import { useState } from "react";
-import { DISTRICTS, LISTING_TYPE } from "@realestate/shared";
+import { DISTRICTS, FLOORS, LISTING_TYPE, formatLocalArea } from "@realestate/shared";
 import Button from "../../components/Button.jsx";
 import Dialog from "../../components/Dialog.jsx";
 import Input, { Select, Textarea } from "../../components/Input.jsx";
 import { updateListing } from "../../services/listings.service.js";
 import { LISTING_TYPE_LABEL } from "../../utils/formatPrice.js";
 
-const NUMBER_FIELDS = ["price", "bedrooms", "bathrooms", "areaSqft"];
+const NUMBER_FIELDS = ["price", "bedrooms", "bathrooms", "areaSqft", "floors"];
 
 const asText = (value) => (value === null || value === undefined ? "" : String(value));
 
@@ -22,6 +22,7 @@ export default function EditListingDialog({ listing, onClose, onSaved }) {
     bedrooms: asText(listing.bedrooms),
     bathrooms: asText(listing.bathrooms),
     areaSqft: asText(listing.areaSqft),
+    floors: asText(listing.floors ?? 1),
     description: asText(listing.description),
   };
   const [form, setForm] = useState(start);
@@ -113,7 +114,7 @@ export default function EditListingDialog({ listing, onClose, onSaved }) {
           </Select>
           <Input label="Address" name="address" value={form.address} onChange={set("address")} />
         </div>
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
           {[
             ["bedrooms", "Bedrooms"],
             ["bathrooms", "Bathrooms"],
@@ -128,8 +129,22 @@ export default function EditListingDialog({ listing, onClose, onSaved }) {
               value={form[key]}
               onChange={set(key)}
               error={errors[key]}
+              hint={
+                key === "areaSqft" && Number(form.areaSqft) > 0
+                  ? `≈ ${formatLocalArea(Number(form.areaSqft), form.district)}`
+                  : undefined
+              }
             />
           ))}
+          <Select label="Floors" name="floors" value={form.floors} onChange={set("floors")}>
+            {Array.from({ length: FLOORS.MAX - FLOORS.MIN + 1 }, (_, i) => FLOORS.MIN + i).map(
+              (n) => (
+                <option key={n} value={n}>
+                  {n}
+                </option>
+              ),
+            )}
+          </Select>
         </div>
         <Textarea
           label="Description"

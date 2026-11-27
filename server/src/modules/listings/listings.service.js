@@ -13,7 +13,7 @@ const toNumber = (value) => (value === null || value === undefined ? null : Numb
 // Trust badges: tour_verified = our team published a scan of it; seller_verified = an admin
 // checked the seller's documents. (SCAN_STATUS.PUBLISHED is a constant, not user input.)
 export const SUMMARY_COLUMNS = `
-  l.id, l.title, l.type, l.price, l.district, l.lat, l.lng,
+  l.id, l.title, l.type, l.price, l.district, l.lat, l.lng, l.area_sqft,
   (l.tour_url IS NOT NULL) AS has_tour,
   EXISTS (SELECT 1 FROM scan_requests sr
            WHERE sr.listing_id = l.id AND sr.status = '${SCAN_STATUS.PUBLISHED}') AS tour_verified,
@@ -24,7 +24,7 @@ export const SUMMARY_COLUMNS = `
     ORDER BY li.position, li.id LIMIT 1) AS cover_image_url`;
 
 const DETAIL_COLUMNS = `${SUMMARY_COLUMNS},
-  l.description, l.address, l.bedrooms, l.bathrooms, l.area_sqft, l.status,
+  l.description, l.address, l.bedrooms, l.bathrooms, l.floors, l.status,
   l.tour_url, l.created_at, l.seller_id,
   u.full_name AS seller_full_name, u.is_verified AS seller_email_verified,
   COALESCE(
@@ -43,6 +43,7 @@ export function toSummary(row) {
     district: row.district,
     coverImageUrl: row.cover_image_url ?? null,
     hasTour: row.has_tour,
+    areaSqft: row.area_sqft, // null = not provided
     tourVerified: row.tour_verified,
     sellerVerified: row.seller_verified,
     lat: row.lat,
@@ -58,7 +59,7 @@ function toListing(row) {
     address: row.address,
     bedrooms: row.bedrooms,
     bathrooms: row.bathrooms,
-    areaSqft: row.area_sqft,
+    floors: row.floors,
     status: row.status,
     tourUrl: row.tour_url,
     images: row.images,
@@ -73,13 +74,14 @@ function toListing(row) {
 }
 
 // Search. Only live listings are shown to buyers.
-// filters: { q, type, district, minPrice, maxPrice, verifiedSeller, page } (checked by the controller)
+// filters: { q, type, district, minPrice, maxPrice, minArea, verifiedSeller, page } (checked by the controller)
 export async function listListings({
   q,
   type,
   district,
   minPrice,
   maxPrice,
+  minArea,
   verifiedSeller,
   page,
 }) {
@@ -97,6 +99,7 @@ export async function listListings({
   if (district) add("l.district = ?", district);
   if (minPrice !== undefined) add("l.price >= ?", minPrice);
   if (maxPrice !== undefined) add("l.price <= ?", maxPrice);
+  if (minArea !== undefined) add("l.area_sqft >= ?", minArea); // listings with no area are left out
   if (verifiedSeller) {
     conditions.push(
       "EXISTS (SELECT 1 FROM users su WHERE su.id = l.seller_id AND su.seller_verified_at IS NOT NULL)",
@@ -213,6 +216,7 @@ const EDITABLE_COLUMNS = {
   bedrooms: "bedrooms",
   bathrooms: "bathrooms",
   areaSqft: "area_sqft",
+  floors: "floors",
 };
 
 // sellerId always comes from the logged in user (req.user.id), never from the request body.

@@ -28,6 +28,7 @@ import { VIEW_KIND } from "@realestate/shared";
 import TrustBadges, { VerifiedBadge } from "../../components/TrustBadges.jsx";
 import ShareButton from "../../components/ShareButton.jsx";
 import { shareLink, shareText } from "../../utils/shareLink.js";
+import AreaCard from "./AreaCard.jsx";
 
 export default function Listing() {
   const { user } = useAuth();
@@ -136,11 +137,7 @@ export default function Listing() {
   const facts = [
     listing.bedrooms !== null && { icon: "bed", label: "Bedrooms", value: listing.bedrooms },
     listing.bathrooms !== null && { icon: "bath", label: "Bathrooms", value: listing.bathrooms },
-    listing.areaSqft !== null && {
-      icon: "area",
-      label: "Area",
-      value: `${new Intl.NumberFormat("en-IN").format(listing.areaSqft)} sq ft`,
-    },
+    { icon: "layers", label: listing.floors === 1 ? "Floor" : "Floors", value: listing.floors },
     { icon: "home", label: "Type", value: LISTING_TYPE_LABEL[listing.type] ?? listing.type },
   ].filter(Boolean);
 
@@ -209,6 +206,14 @@ export default function Listing() {
               </div>
             ))}
           </dl>
+
+          {listing.areaSqft > 0 && (
+            <AreaCard
+              areaSqft={listing.areaSqft}
+              district={listing.district}
+              floors={listing.floors}
+            />
+          )}
 
           {listing.description && (
             <section>

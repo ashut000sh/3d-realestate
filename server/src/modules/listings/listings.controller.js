@@ -1,6 +1,6 @@
 // LISTINGS controllers: read the request, call the service, send the response.
 // No SQL in here. Database work belongs in listings.service.js.
-import { DISTRICTS, LIMITS, LISTING_TYPE } from "@realestate/shared";
+import { DISTRICTS, FLOORS, LIMITS, LISTING_TYPE } from "@realestate/shared";
 import { verifyToken } from "../../middleware/auth.js";
 import { httpError } from "../../middleware/errorHandler.js";
 import * as listingsService from "./listings.service.js";
@@ -9,10 +9,10 @@ import { listingFileUrl, receiveImages, removeFiles } from "./listings.upload.js
 const LISTING_TYPES = Object.values(LISTING_TYPE);
 
 // GET /api/listings   (public)
-// in:  query: ?q, type, minPrice, maxPrice, district, verifiedSeller (true = verified sellers only), page
+// in:  query: ?q, type, minPrice, maxPrice, district, minArea (sq ft), verifiedSeller (true = verified sellers only), page
 // out: 200 { items: ListingSummary[], page, total }
 export async function list(req, res) {
-  const { q, type, district, minPrice, maxPrice, verifiedSeller, page } = req.query;
+  const { q, type, district, minPrice, maxPrice, minArea, verifiedSeller, page } = req.query;
   if (verifiedSeller !== undefined && !["true", "false", ""].includes(verifiedSeller)) {
     throw httpError(400, "verifiedSeller must be true or false");
   }
@@ -29,6 +29,7 @@ export async function list(req, res) {
     district: district || undefined,
     minPrice: readOptionalNumber(minPrice, "minPrice"),
     maxPrice: readOptionalNumber(maxPrice, "maxPrice"),
+    minArea: readOptionalNumber(minArea, "minArea"),
     verifiedSeller: verifiedSeller === "true",
     page: page === undefined || page === "" ? 1 : readId(page, "page"),
   };
@@ -76,7 +77,7 @@ export async function one(req, res) {
 }
 
 // POST /api/listings   (seller)
-// in:  { title, description, type, price, district, address, lat, lng, bedrooms, bathrooms, areaSqft }
+// in:  { title, description, type, price, district, address, lat, lng, bedrooms, bathrooms, areaSqft, floors }
 // out: 201 { listing: Listing }
 export async function create(req, res) {
   const fields = readListingFields(req.body ?? {}, { isCreate: true });
@@ -182,6 +183,20 @@ function readListingFields(body, { isCreate }) {
         fields[key] = Number(value);
       }
     }
+  }
+
+  // Floors: optional on create (the database default is 1), never null
+  if (has("floors")) {
+    const value = Number(body.floors);
+    if (
+      !Number.isInteger(value) ||
+      value < FLOORS.MIN ||
+      value > FLOORS.MAX ||
+      body.floors === ""
+    ) {
+      throw httpError(400, `floors must be a whole number from ${FLOORS.MIN} to ${FLOORS.MAX}`);
+    }
+    fields.floors = value;
   }
 
   if (!isCreate && Object.keys(fields).length === 0) {

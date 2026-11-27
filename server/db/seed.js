@@ -80,6 +80,7 @@ const LISTINGS = [
     bedrooms: 3,
     bathrooms: 2,
     areaSqft: 2100,
+    floors: 3, // levels (a flat or a single room counts as 1)
     scan: PUBLISHED,
   },
   {
@@ -92,6 +93,7 @@ const LISTINGS = [
     bedrooms: 2,
     bathrooms: 1,
     areaSqft: 950,
+    floors: 1,
     scan: PUBLISHED,
   },
   {
@@ -104,6 +106,7 @@ const LISTINGS = [
     bedrooms: 1,
     bathrooms: 1,
     areaSqft: 400,
+    floors: 1,
     scan: null,
   },
   {
@@ -116,6 +119,7 @@ const LISTINGS = [
     bedrooms: 5,
     bathrooms: 4,
     areaSqft: 3800,
+    floors: 2,
     scan: PENDING,
   },
   {
@@ -128,6 +132,7 @@ const LISTINGS = [
     bedrooms: 0,
     bathrooms: 2,
     areaSqft: 2500,
+    floors: 1,
     scan: null,
   },
   {
@@ -140,6 +145,7 @@ const LISTINGS = [
     bedrooms: 4,
     bathrooms: 2,
     areaSqft: 1800,
+    floors: 4,
     scan: PUBLISHED,
   },
   {
@@ -152,6 +158,7 @@ const LISTINGS = [
     bedrooms: 2,
     bathrooms: 1,
     areaSqft: 900,
+    floors: 3,
     scan: PUBLISHED,
   },
   {
@@ -164,6 +171,7 @@ const LISTINGS = [
     bedrooms: 3,
     bathrooms: 2,
     areaSqft: 1200,
+    floors: 1,
     scan: SCHEDULED,
   },
   {
@@ -176,6 +184,7 @@ const LISTINGS = [
     bedrooms: 2,
     bathrooms: 1,
     areaSqft: 1100,
+    floors: 1,
     scan: null,
   },
   {
@@ -188,6 +197,7 @@ const LISTINGS = [
     bedrooms: 3,
     bathrooms: 2,
     areaSqft: 1350,
+    floors: 1,
     scan: CANCELLED,
   },
   {
@@ -200,6 +210,7 @@ const LISTINGS = [
     bedrooms: 1,
     bathrooms: 1,
     areaSqft: 450,
+    floors: 1,
     scan: PUBLISHED,
   },
   {
@@ -212,6 +223,7 @@ const LISTINGS = [
     bedrooms: 12,
     bathrooms: 12,
     areaSqft: 9000,
+    floors: 6,
     scan: SCANNED,
   },
   {
@@ -224,6 +236,7 @@ const LISTINGS = [
     bedrooms: 2,
     bathrooms: 1,
     areaSqft: 800,
+    floors: 2,
     scan: null,
   },
   {
@@ -236,6 +249,7 @@ const LISTINGS = [
     bedrooms: 1,
     bathrooms: 1,
     areaSqft: 500,
+    floors: 1,
     scan: PENDING,
   },
   {
@@ -248,6 +262,7 @@ const LISTINGS = [
     bedrooms: 4,
     bathrooms: 3,
     areaSqft: 2600,
+    floors: 2,
     scan: null,
   },
 ];
@@ -420,9 +435,9 @@ async function seed(client) {
 
     const { rows } = await client.query(
       `INSERT INTO listings (seller_id, title, description, type, status, price, district, address,
-                             lat, lng, bedrooms, bathrooms, area_sqft, tour_url, created_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14,
-               now() - make_interval(days => $15))
+                             lat, lng, bedrooms, bathrooms, area_sqft, floors, tour_url, created_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15,
+               now() - make_interval(days => $16))
        RETURNING id`,
       [
         userId[listing.seller],
@@ -438,6 +453,7 @@ async function seed(client) {
         listing.bedrooms,
         listing.bathrooms,
         listing.areaSqft,
+        listing.floors,
         listingStatusFor(listing.scan) === LISTING_STATUS.LIVE
           ? TOUR_BY_KIND[TOUR_KIND[listing.title]]
           : null,
