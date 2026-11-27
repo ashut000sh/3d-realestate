@@ -230,6 +230,20 @@ Numbers = {
 // because a tour can be opened straight from a shared link.
 ```
 
+## SHARE (link previews)  ·  `server/src/modules/share/`
+
+Not under `/api`: these return **HTML**, not JSON. Paths are in `shared/api-endpoints.js` (`SHARE`).
+
+| Constant | Method + URL | Who | Send | Get back |
+|---|---|---|---|---|
+| `SHARE.LISTING` | `GET /share/listings/:id` | anyone | `query: ?view=tour` (optional: open the 3D tour) | `200 text/html`: Open Graph + Twitter tags, then a redirect to the website · `404 text/html` if the listing doesn't exist or isn't **live** |
+
+- **Why it exists:** WhatsApp, Viber, Messenger and Facebook read a link's tags *without running JavaScript*, so the React app can't give each listing its own preview. The website's Share buttons link here instead of to the React page.
+- **Tags:** `og:title` (listing title, `· 3D tour` for `?view=tour`), `og:description` (type · district · price), `og:image` (first photo as an absolute URL), `og:url` (this share link), `og:site_name`, `twitter:card` etc. Every value is HTML-escaped.
+- **Redirect:** people are sent to `CLIENT_URL/listings/:id` (or `/listings/:id/tour`) with a meta refresh plus `location.replace`. Link-preview robots (matched by User-Agent: `facebookexternalhit`, `WhatsApp`, `Viber`, …) get the same tags **without** the redirect, because Facebook follows meta refreshes and would then read the React app's generic tags. The response has `Vary: User-Agent`.
+- **Config** (`server/src/config/env.js`): `CLIENT_URL` = the website (where people are sent). `PUBLIC_SERVER_URL` = this API server's public address, used for `og:image` / `og:url`. Both default to localhost.
+- Previews only appear once the site is on a **public https URL**: chat apps can't fetch `localhost`.
+
 ## Live chat (Socket.IO)
 
 Connect to the same server URL. Event names are in `shared/socket-events.js`.
@@ -256,3 +270,4 @@ Add a line whenever this contract changes, so the other side knows to update.
 | 2026-11-26 | M1 | Added `API.LISTINGS.AVAILABILITY` (blocked dates for the short-stay calendar) |
 | 2026-11-26 | M1 | Added `API.LISTINGS.RECORD_VIEW` and `API.LISTINGS.MINE_STATS` (seller stats) |
 | 2026-11-26 | M1 | Trust badges: `tourVerified` / `sellerVerified` on listings and conversations, `?verifiedSeller` search filter, `API.ADMIN.VERIFY_SELLER` / `UNVERIFY_SELLER` |
+| 2026-11-26 | M1 | Added `SHARE.LISTING` (`GET /share/listings/:id`, HTML link-preview page) and the `PUBLIC_SERVER_URL` env setting |

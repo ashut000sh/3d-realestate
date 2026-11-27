@@ -66,6 +66,9 @@ const PATHS = {
   cart: "M3 4h2l2.4 11h11.2L21 7H6.2M9 20h.01M18 20h.01",
   bank: "M3 9 12 4l9 5M4 10h16M6 10v8m4-8v8m4-8v8m4-8v8M3 20h18",
   walk: "M13 4h.01M10 21l2-6 3 3v3m-6-9 3-3 3 3 3 1M9 12l-2 4",
+  share:
+    "M8.6 13.5 15.4 17.5M15.4 6.5 8.6 10.5M18 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM6 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM18 22a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z",
+  copy: "M9 9h11v11H9V9ZM5 15H4V4h11v1",
 };
 
 // The raw path data, for places that need an icon outside React (map markers)
