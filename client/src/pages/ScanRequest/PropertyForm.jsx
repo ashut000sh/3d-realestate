@@ -4,7 +4,7 @@ import { useState } from "react";
 import { MapContainer, Marker, TileLayer, useMapEvents } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { DISTRICTS, LISTING_TYPE } from "@realestate/shared";
+import { DISTRICTS, FLOORS, LISTING_TYPE, formatLocalArea } from "@realestate/shared";
 import Button from "../../components/Button.jsx";
 import Icon from "../../components/Icon.jsx";
 import Input, { Select, Textarea } from "../../components/Input.jsx";
@@ -42,6 +42,7 @@ const EMPTY = {
   bedrooms: "",
   bathrooms: "",
   areaSqft: "",
+  floors: "1",
 };
 
 export default function PropertyForm({ onSubmit, submitting, serverError }) {
@@ -81,6 +82,7 @@ export default function PropertyForm({ onSubmit, submitting, serverError }) {
       bedrooms: toNumber(form.bedrooms),
       bathrooms: toNumber(form.bathrooms),
       areaSqft: toNumber(form.areaSqft),
+      floors: Number(form.floors),
       lat: point?.[0],
       lng: point?.[1],
     });
@@ -173,7 +175,21 @@ export default function PropertyForm({ onSubmit, submitting, serverError }) {
           value={form.areaSqft}
           onChange={set("areaSqft")}
           error={errors.areaSqft}
+          hint={
+            Number(form.areaSqft) > 0
+              ? `≈ ${formatLocalArea(Number(form.areaSqft), form.district)}`
+              : undefined
+          }
         />
+        <Select label="Floors" name="floors" value={form.floors} onChange={set("floors")}>
+          {Array.from({ length: FLOORS.MAX - FLOORS.MIN + 1 }, (_, i) => FLOORS.MIN + i).map(
+            (n) => (
+              <option key={n} value={n}>
+                {n} {n === 1 ? "floor" : "floors"}
+              </option>
+            ),
+          )}
+        </Select>
       </div>
 
       <Textarea

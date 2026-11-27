@@ -1,6 +1,8 @@
 // Fills the database with sample data for testing. Usage: npm run db:seed -w server
 // WARNING: it first EMPTIES every table, so never run it against real data.
 // Run the migrations first: npm run db:migrate -w server
+import fs from "node:fs";
+import path from "node:path";
 import bcrypt from "bcryptjs";
 import pg from "pg";
 import {
@@ -12,7 +14,6 @@ import {
   ROLES,
   SCAN_STATUS,
 } from "@realestate/shared";
-import { LISTING_PHOTOS } from "./seed-photos.js";
 
 const PASSWORD = "Password123!";
 
@@ -82,6 +83,7 @@ const LISTINGS = [
     bedrooms: 3,
     bathrooms: 2,
     areaSqft: 2100,
+    floors: 3, // levels (a flat or a single room counts as 1)
     scan: PUBLISHED,
   },
   {
@@ -94,6 +96,7 @@ const LISTINGS = [
     bedrooms: 2,
     bathrooms: 1,
     areaSqft: 950,
+    floors: 1,
     scan: PUBLISHED,
   },
   {
@@ -106,6 +109,7 @@ const LISTINGS = [
     bedrooms: 1,
     bathrooms: 1,
     areaSqft: 400,
+    floors: 1,
     scan: null,
   },
   {
@@ -118,6 +122,7 @@ const LISTINGS = [
     bedrooms: 5,
     bathrooms: 4,
     areaSqft: 3800,
+    floors: 2,
     scan: PENDING,
   },
   {
@@ -130,6 +135,7 @@ const LISTINGS = [
     bedrooms: 0,
     bathrooms: 2,
     areaSqft: 2500,
+    floors: 1,
     scan: null,
   },
   {
@@ -142,6 +148,7 @@ const LISTINGS = [
     bedrooms: 4,
     bathrooms: 2,
     areaSqft: 1800,
+    floors: 4,
     scan: PUBLISHED,
   },
   {
@@ -154,6 +161,7 @@ const LISTINGS = [
     bedrooms: 2,
     bathrooms: 1,
     areaSqft: 900,
+    floors: 3,
     scan: PUBLISHED,
   },
   {
@@ -166,6 +174,7 @@ const LISTINGS = [
     bedrooms: 3,
     bathrooms: 2,
     areaSqft: 1200,
+    floors: 1,
     scan: SCHEDULED,
   },
   {
@@ -178,6 +187,7 @@ const LISTINGS = [
     bedrooms: 2,
     bathrooms: 1,
     areaSqft: 1100,
+    floors: 1,
     scan: null,
   },
   {
@@ -190,6 +200,7 @@ const LISTINGS = [
     bedrooms: 3,
     bathrooms: 2,
     areaSqft: 1350,
+    floors: 1,
     scan: CANCELLED,
   },
   {
@@ -202,6 +213,7 @@ const LISTINGS = [
     bedrooms: 1,
     bathrooms: 1,
     areaSqft: 450,
+    floors: 1,
     scan: PUBLISHED,
   },
   {
@@ -214,6 +226,7 @@ const LISTINGS = [
     bedrooms: 12,
     bathrooms: 12,
     areaSqft: 9000,
+    floors: 6,
     scan: SCANNED,
   },
   {
@@ -226,6 +239,7 @@ const LISTINGS = [
     bedrooms: 2,
     bathrooms: 1,
     areaSqft: 800,
+    floors: 2,
     scan: null,
   },
   {
@@ -238,6 +252,7 @@ const LISTINGS = [
     bedrooms: 1,
     bathrooms: 1,
     areaSqft: 500,
+    floors: 1,
     scan: PENDING,
   },
   {
@@ -250,6 +265,7 @@ const LISTINGS = [
     bedrooms: 4,
     bathrooms: 3,
     areaSqft: 2600,
+    floors: 2,
     scan: null,
   },
 ];
@@ -356,12 +372,31 @@ function nearby([lat, lng], i) {
   return [lat + ((i % 5) - 2) * 0.008, lng + ((i % 3) - 1) * 0.01];
 }
 
-// Real photos that match each listing (Wikimedia Commons, credits in seed-photos.js)
-const photosFor = (listing) => {
-  const photos = LISTING_PHOTOS[listing.title];
-  if (!photos) throw new Error(`No photos for "${listing.title}" in seed-photos.js`);
-  return photos;
-};
+// Photos are stored in the project (server/db/seed-assets/listings/<slug>/1.jpg, 2.jpg, 3.jpg,
+// 1 = cover; credits in seed-photos.js) and copied to where uploaded photos live,
+// server/uploads/listings/<listing id>/, so the demo works offline.
+const SEED_PHOTOS_DIR = path.resolve(import.meta.dirname, "seed-assets/listings");
+const UPLOADED_LISTINGS_DIR = path.resolve(import.meta.dirname, "../uploads/listings");
+const PHOTO_FILES = ["1.jpg", "2.jpg", "3.jpg"];
+
+const slugOf = (title) =>
+  title
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+
+// Copies the listing's photos and returns their URLs, in order (the first is the cover)
+function copyPhotos(listing, listingId) {
+  const from = path.join(SEED_PHOTOS_DIR, slugOf(listing.title));
+  const to = path.join(UPLOADED_LISTINGS_DIR, String(listingId));
+  fs.mkdirSync(to, { recursive: true });
+  return PHOTO_FILES.map((file) => {
+    const source = path.join(from, file);
+    if (!fs.existsSync(source)) throw new Error(`Missing seed photo ${source}`);
+    fs.copyFileSync(source, path.join(to, file));
+    return `/uploads/listings/${listingId}/${file}`;
+  });
+}
 
 // ---------- seeding ----------
 
@@ -389,6 +424,10 @@ async function seed(client) {
     userId[user.key] = rows[0].id;
   }
 
+  // Start with no listing photos on disk, so old test uploads don't pile up.
+  // Only listings/: uploaded 3D tours in uploads/tours/ are left alone.
+  fs.rmSync(UPLOADED_LISTINGS_DIR, { recursive: true, force: true });
+
   const listingIds = [];
   const districtCount = {};
   for (const [i, listing] of LISTINGS.entries()) {
@@ -399,9 +438,9 @@ async function seed(client) {
 
     const { rows } = await client.query(
       `INSERT INTO listings (seller_id, title, description, type, status, price, district, address,
-                             lat, lng, bedrooms, bathrooms, area_sqft, tour_url, created_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14,
-               now() - make_interval(days => $15))
+                             lat, lng, bedrooms, bathrooms, area_sqft, floors, tour_url, created_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15,
+               now() - make_interval(days => $16))
        RETURNING id`,
       [
         userId[listing.seller],
@@ -417,6 +456,7 @@ async function seed(client) {
         listing.bedrooms,
         listing.bathrooms,
         listing.areaSqft,
+        listing.floors,
         listingStatusFor(listing.scan) === LISTING_STATUS.LIVE
           ? TOUR_BY_KIND[TOUR_KIND[listing.title]]
           : null,
@@ -426,7 +466,7 @@ async function seed(client) {
     const listingId = rows[0].id;
     listingIds.push(listingId);
 
-    for (const [position, url] of photosFor(listing).entries()) {
+    for (const [position, url] of copyPhotos(listing, listingId).entries()) {
       await client.query(
         "INSERT INTO listing_images (listing_id, url, position) VALUES ($1, $2, $3)",
         [listingId, url, position],

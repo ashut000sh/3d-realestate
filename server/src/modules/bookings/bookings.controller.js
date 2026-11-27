@@ -1,6 +1,7 @@
 // BOOKINGS controllers: read the request, call the service, send the response.
 // No SQL in here. Database work belongs in bookings.service.js.
-import { BOOKING_KIND, BOOKING_STATUS } from "@realestate/shared";
+import { AVAILABILITY, BOOKING_KIND, BOOKING_STATUS } from "@realestate/shared";
+import { verifyToken } from "../../middleware/auth.js";
 import { httpError } from "../../middleware/errorHandler.js";
 import * as bookingsService from "./bookings.service.js";
 
@@ -39,6 +40,30 @@ export async function create(req, res) {
   res.status(201).json(result);
 }
 
+// GET /api/listings/:id/availability   (public)
+// in:  query: ?from=YYYY-MM-DD&to=YYYY-MM-DD   (default: today to AVAILABILITY.DEFAULT_MONTHS ahead,
+//      at most AVAILABILITY.MAX_MONTHS between them; `to` is exclusive)
+// out: 200 { from, to, blocked: [{ start, end }] }   dates only, never who booked
+//      400 if the listing is not a short stay; 404 if it can't be seen (same rule as GET /listings/:id)
+export async function availability(req, res) {
+  const id = readId(req.params.id, "id");
+  const today = new Date().toISOString().slice(0, 10);
+  const from = req.query.from === undefined ? today : readDate(req.query.from, "from");
+  const to =
+    req.query.to === undefined
+      ? addMonths(from, AVAILABILITY.DEFAULT_MONTHS)
+      : readDate(req.query.to, "to");
+  if (to <= from) throw httpError(400, "to must be after from");
+  if (to > addMonths(from, AVAILABILITY.MAX_MONTHS)) {
+    throw httpError(400, `Ask for at most ${AVAILABILITY.MAX_MONTHS} months at a time`);
+  }
+
+  // Public route: the token is optional (lets a seller see the calendar of their own draft)
+  const header = req.headers.authorization ?? "";
+  const viewer = header.startsWith("Bearer ") ? verifyToken(header.slice(7)) : null;
+  res.json(await bookingsService.getAvailability(id, from, to, viewer));
+}
+
 // GET /api/bookings/mine   (logged in)
 // in:  query: ?as=seller (bookings on my listings instead of bookings I made)
 // out: 200 { items: Booking[] }
@@ -67,6 +92,24 @@ function readId(value, name) {
   const id = Number(value);
   if (!Number.isInteger(id) || id <= 0) throw httpError(400, `${name} must be a positive number`);
   return id;
+}
+
+// "YYYY-MM-DD" that is a real calendar date (2026-02-30 is rejected)
+function readDate(value, name) {
+  const valid =
+    typeof value === "string" &&
+    DATE_PATTERN.test(value) &&
+    !Number.isNaN(Date.parse(value)) &&
+    new Date(`${value}T00:00:00Z`).toISOString().slice(0, 10) === value;
+  if (!valid) throw httpError(400, `${name} must be a date like 2026-12-01`);
+  return value;
+}
+
+// "2026-01-31" + 1 month -> "2026-02-28" (clamped to the end of the month)
+function addMonths(value, months) {
+  const [y, m, d] = value.split("-").map(Number);
+  const lastDay = new Date(Date.UTC(y, m - 1 + months + 1, 0)).getUTCDate();
+  return new Date(Date.UTC(y, m - 1 + months, Math.min(d, lastDay))).toISOString().slice(0, 10);
 }
 
 // "YYYY-MM-DD", today or later

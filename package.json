@@ -13,12 +13,14 @@
     "dev:client": "npm run dev -w client",
     "dev:server": "npm run dev -w server",
     "build": "npm run build -w client",
+    "test": "node --test shared/",
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "db:seed": "npm run db:seed -w server",
     "tours": "node scripts/make-sample-tours.mjs",
-    "demo:reset": "npm run db:migrate -w server && npm run db:seed && npm run tours"
+    "demo:reset": "npm run db:migrate -w server && npm run db:seed && npm run tours",
+    "photo-credits": "node server/db/photo-credits.js"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

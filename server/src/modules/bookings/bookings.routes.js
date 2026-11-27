@@ -7,6 +7,8 @@ import * as controller from "./bookings.controller.js";
 
 const router = Router();
 
+// Public: blocked dates of a short stay (dates only, no guest data)
+router.get(API.LISTINGS.AVAILABILITY, controller.availability);
 router.post(API.BOOKINGS.CREATE, requireAuth, controller.create);
 router.get(API.BOOKINGS.MINE, requireAuth, controller.mine);
 router.patch(API.BOOKINGS.UPDATE_STATUS, requireAuth, controller.updateStatus);

@@ -1,6 +1,6 @@
 // CHAT service: all database queries for this module live here.
 // Used by the REST controllers AND by chat.socket.js (live messages).
-import { LISTING_STATUS } from "@realestate/shared";
+import { LISTING_STATUS, SCAN_STATUS } from "@realestate/shared";
 import { query } from "../../config/db.js";
 import { httpError } from "../../middleware/errorHandler.js";
 
@@ -12,7 +12,13 @@ export const MAX_MESSAGE_LENGTH = 2000;
 const CONVERSATION_SELECT = `
   SELECT c.id,
          l.id AS listing_id, l.title AS listing_title,
+         EXISTS (SELECT 1 FROM scan_requests sr
+                  WHERE sr.listing_id = l.id AND sr.status = '${SCAN_STATUS.PUBLISHED}') AS tour_verified,
+         EXISTS (SELECT 1 FROM users su
+                  WHERE su.id = l.seller_id AND su.seller_verified_at IS NOT NULL) AS seller_verified,
          other.id AS other_id, other.full_name AS other_full_name,
+         other.is_verified AS other_email_verified,
+         (other.id = l.seller_id AND other.seller_verified_at IS NOT NULL) AS other_seller_verified,
          last.body AS last_body, last.created_at AS last_created_at,
          (SELECT count(*)::int FROM messages m
            WHERE m.conversation_id = c.id AND m.sender_id <> $1 AND m.read_at IS NULL) AS unread_count
@@ -29,7 +35,15 @@ function toConversation(row) {
   return {
     id: row.id,
     listing: { id: row.listing_id, title: row.listing_title },
-    otherUser: { id: row.other_id, fullName: row.other_full_name },
+    // Trust badges for the chat header
+    tourVerified: row.tour_verified,
+    sellerVerified: row.seller_verified,
+    otherUser: {
+      id: row.other_id,
+      fullName: row.other_full_name,
+      emailVerified: row.other_email_verified,
+      sellerVerified: row.other_seller_verified, // true only when the other person is the verified seller
+    },
     lastMessage:
       row.last_body === null ? null : { body: row.last_body, createdAt: row.last_created_at },
     unreadCount: row.unread_count,

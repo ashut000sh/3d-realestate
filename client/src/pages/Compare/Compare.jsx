@@ -5,7 +5,7 @@
 // Job:       Side-by-side table of up to 3 properties chosen with "Add to compare".
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { LIMITS } from "@realestate/shared";
+import { LIMITS, formatAreaShort } from "@realestate/shared";
 import Button from "../../components/Button.jsx";
 import EmptyState from "../../components/EmptyState.jsx";
 import Icon from "../../components/Icon.jsx";
@@ -17,6 +17,7 @@ import { mediaUrl } from "../../utils/mediaUrl.js";
 import { getCompareIds, onCompareChange, removeFromCompare } from "./compareStore.js";
 import Photo from "../../components/Photo.jsx";
 import { usePageTitle } from "../../hooks/usePageTitle.js";
+import { VerifiedBadge } from "../../components/TrustBadges.jsx";
 
 const show = (value) => (value === null || value === undefined ? "–" : value);
 
@@ -29,9 +30,9 @@ const ROWS = [
   { label: "Bathrooms", cell: (l) => show(l.bathrooms) },
   {
     label: "Area",
-    cell: (l) =>
-      l.areaSqft === null ? "–" : `${new Intl.NumberFormat("en-IN").format(l.areaSqft)} sq ft`,
+    cell: (l) => formatAreaShort(l.areaSqft, l.district),
   },
+  { label: "Floors", cell: (l) => show(l.floors) },
   {
     label: "3D tour",
     cell: (l) =>
@@ -44,6 +45,24 @@ const ROWS = [
         </Link>
       ) : (
         <span className="text-muted">Not yet</span>
+      ),
+  },
+  {
+    label: "Verified tour",
+    cell: (l) =>
+      l.tourVerified ? (
+        <VerifiedBadge kind="tour" tipSide="top" />
+      ) : (
+        <span className="text-muted">No</span>
+      ),
+  },
+  {
+    label: "Verified seller",
+    cell: (l) =>
+      l.sellerVerified ? (
+        <VerifiedBadge kind="seller" tipSide="top" />
+      ) : (
+        <span className="text-muted">No</span>
       ),
   },
 ];

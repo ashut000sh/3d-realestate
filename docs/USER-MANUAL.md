@@ -85,7 +85,9 @@ A small gold number on **Compare** shows how many homes you picked. A red number
 The home page shows featured homes. Use the **Buy / Rent / Short stay** tabs, or type a place
 (for example *Lalitpur* or *Lakeside*) in the search bar and press **Search**.
 
-Each card shows the price, the district and the type. A **3D tour** badge means you can walk
+Each card shows the price, the district, the type and the size, in sq ft and in the local unit
+("1,250 sq ft · 3.7 aana"; bigha or kattha for Chitwan). "Area not provided" means the seller
+didn't give it. A **3D tour** badge means you can walk
 through it online.
 
 > 📷 `04-home.png`: the home page with listing cards
@@ -97,7 +99,11 @@ Open **Explore** to search with filters:
 - **Search**: words from the title or address
 - **Type**: for sale, for rent or short stay
 - **District**: Kathmandu, Lalitpur, Bhaktapur, Kaski or Chitwan
-- **Min / Max price** in rupees, then press **Apply**
+- **Min / Max price** in rupees
+- **Minimum area**: type it in **sq ft** or switch the little toggle to **aana** (4 aana is about
+  1,369 sq ft). Homes that don't list their area are hidden while this is set.
+
+Then press **Apply**.
 
 The results, the map and the web address all update. You can copy the address to share the
 same search. The map shows every result: click a pin to see the price and open the home.
@@ -112,8 +118,18 @@ Prices for rent are **per month** and for short stays **per night**.
 Click any card to open the home. You see:
 
 - **Photos**: use the arrows or the small pictures underneath
-- the **price**, address, bedrooms, bathrooms, area and description
-- a **map** of where it is
+- the **price**, address, bedrooms, bathrooms, floors and description
+- an **Area** card: the size in **sq ft**, the same size in local units and in **m²**, and one
+  outline per floor. Kathmandu, Lalitpur, Bhaktapur and Kaski use **ropani-aana-paisa-daam**;
+  Chitwan uses **bigha-kattha-dhur**. For example, 1,250 sq ft is about **3 aana 2 paisa 2 daam**.
+  Homes without an area simply don't show the card.
+- a **map** of where it is, with **what's nearby** (schools, clinics, pharmacies, bus stops,
+  temples, markets, banks) within 1 km
+- **walking routes**: tap a place in the "What's nearby" list, tap its marker, or tap **any spot on
+  the map**. The real walking route is drawn on the map with a card like **"8 min · 600 m, From
+  this home to Kamalpokhari Bus Stop"**. Tap another place to switch, or **Clear** to remove it.
+  Use the **Find a place nearby** box to search the list by name. If the route service is busy,
+  the card says **approx.** and shows a straight line instead.
 - who listed it
 - buttons to **Open 3D tour**, **Book a viewing** (or **Book a stay**), **Chat with seller**,
   **Save** and **Add to compare**
@@ -176,7 +192,8 @@ home. You need to be logged in; if you aren't, Aawas asks you to log in and brin
 
 1. On a home's page press **Add to compare**.
 2. Do the same for up to **3** homes.
-3. Open **Compare** to see them side by side: price, type, district, rooms, area and 3D tour.
+3. Open **Compare** to see them side by side: price, type, district, rooms, area (sq ft and the
+   local unit, e.g. "1,250 sq ft · 3.7 aana"), floors and 3D tour.
 
 Press **Remove** to take one out. Your choice stays even if you close the browser.
 
@@ -238,7 +255,8 @@ Sign up with **I'm listing** to use these pages.
 Open **List a property** from the account menu (or **List your property** in the top bar).
 It takes three steps:
 
-1. **Property details**: title, type, price, district, address, rooms, area, description.
+1. **Property details**: title, type, price, district, address, rooms, area (in sq ft: the form
+   shows the same size in aana or kattha underneath), number of floors, description.
    **Click the map** where the property is. Press **Save and continue**.
 2. **Photos**: up to 10 photos, `.jpg` or `.png`, up to 5 MB each. The first one is the
    cover. Press **Upload and continue** (or **Skip**).
@@ -261,7 +279,7 @@ Open **My listings** from the account menu to manage everything you've listed.
   them, and how many bookings are **waiting for your answer**.
 - Filter by **All**, **Live**, **Waiting for scan** or **Drafts**.
 - On each listing:
-  - **Edit details**: change the title, price, rooms, description and more
+  - **Edit details**: change the title, price, rooms, area, number of floors, description and more
   - **Add photos**: up to 10 photos per listing in total
   - **Request 3D scan**: shown when a listing has no tour and no scan in progress
 
